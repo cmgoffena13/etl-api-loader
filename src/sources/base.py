@@ -5,6 +5,19 @@ from pydantic import BaseModel, ConfigDict, Field
 from src.enum import HttpMethod
 
 
+class PaginationConfig(BaseModel):
+    pass
+
+
+class OffsetPaginationConfig(PaginationConfig):
+    offset_param: str = Field(default="offset")
+    limit_param: str = Field(default="limit")
+    start_offset: int = Field(default=0)
+    max_concurrent: int = Field(default=5)
+    offset: int
+    limit: int
+
+
 class APIEndpointConfig(BaseModel):
     method: HttpMethod = Field(default=HttpMethod.GET)
     endpoint: str
@@ -23,6 +36,6 @@ class APIConfig(BaseModel):
     pagination_strategy: Optional[Literal["offset"]] = None
     authentication_strategy: Optional[Literal["auth", "bearer"]] = None
     default_headers: dict[str, str] = Field(default_factory=dict)
-    pagination: dict[str, Any] = Field(default_factory=dict)
+    pagination: Optional[PaginationConfig] = None
     endpoints: list[APIEndpointConfig] = Field(default_factory=list)
     nested_relations: dict[str, list[str]] = Field(default_factory=dict)

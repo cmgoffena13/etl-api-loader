@@ -2,6 +2,7 @@ from typing import Optional
 
 from src.pipeline.read.pagination.base import BasePaginationStrategy
 from src.pipeline.read.pagination.offset import OffsetPaginationStrategy
+from src.processor.client import AsyncProductionHTTPClient
 from src.sources.base import APIConfig
 
 
@@ -14,13 +15,13 @@ class PaginationStrategyFactory:
 
     @classmethod
     def create_strategy(
-        cls, source: APIConfig, **kwargs
+        cls, source: APIConfig, client: AsyncProductionHTTPClient, **kwargs
     ) -> Optional[BasePaginationStrategy]:
         if source.pagination_strategy is None:
             return None
         try:
             strategy = cls._strategies[source.pagination_strategy]
-            return strategy(**kwargs)
+            return strategy(source=source, client=client, **kwargs)
         except KeyError:
             raise ValueError(
                 f"Unsupported pagination strategy: {source.pagination_strategy}. Supported strategies: {cls.get_supported_strategies()}"

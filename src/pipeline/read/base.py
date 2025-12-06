@@ -18,7 +18,7 @@ class BaseReader(ABC):
             source=source
         )
         self.pagination_strategy = PaginationStrategyFactory.create_strategy(
-            source=source
+            source=source, client=client
         )
 
     @abstractmethod
