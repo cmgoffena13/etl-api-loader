@@ -8,6 +8,7 @@ from src.enum import HttpMethod
 class APIEndpointConfig(BaseModel):
     method: HttpMethod = Field(default=HttpMethod.GET)
     endpoint: str
+    body: dict[str, Any] = Field(default_factory=dict)
     params: dict[str, Any] = Field(default_factory=dict)
     data_model: Type[BaseModel]
     nested: list["APIEndpointConfig"] = Field(default_factory=list)
@@ -21,7 +22,7 @@ class APIConfig(BaseModel):
     type: Literal["rest", "graphql"]
     pagination_strategy: Optional[Literal["offset"]] = None
     authentication_strategy: Optional[Literal["auth", "bearer"]] = None
-    default_headers: dict[str, str]
+    default_headers: dict[str, str] = Field(default_factory=dict)
     pagination: dict[str, Any] = Field(default_factory=dict)
     endpoints: list[APIEndpointConfig] = Field(default_factory=list)
     nested_relations: dict[str, list[str]] = Field(default_factory=dict)

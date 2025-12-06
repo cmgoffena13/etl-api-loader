@@ -1,5 +1,6 @@
 from pydantic import BaseModel, Field
 
+from src.enum import HttpMethod
 from src.sources.base import APIConfig
 
 
@@ -9,10 +10,14 @@ class SourceRegistry(BaseModel):
     def add_sources(self, sources: list) -> None:
         self.sources.extend(sources)
 
-    def get_source(self, base_url: str, endpoint: str) -> APIConfig:
+    def get_source(self, base_url: str, endpoint: str, method: HttpMethod) -> APIConfig:
         for source in self.sources:
-            if source.base_url == base_url and source.endpoint == endpoint:
+            if (
+                source.base_url == base_url
+                and source.endpoint == endpoint
+                and source.method == method
+            ):
                 return source
         raise ValueError(
-            f"Source not found for base_url: {base_url} and endpoint: {endpoint}"
+            f"Source not found for base_url: {base_url}, endpoint: {endpoint}, method: {method}"
         )
