@@ -19,6 +19,8 @@ class APIEndpointConfig(BaseModel):
 class APIConfig(BaseModel):
     base_url: str
     type: Literal["rest", "graphql"]
+    pagination_strategy: Literal["offset"] = None
+    authentication_strategy: Literal["auth", "bearer"] = None
     default_headers: dict[str, str]
     pagination: dict[str, Any] = Field(default_factory=dict)
     endpoints: list[APIEndpointConfig] = Field(default_factory=list)
