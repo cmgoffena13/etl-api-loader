@@ -21,6 +21,7 @@ class OffsetPaginationConfig(PaginationConfig):
 class APIEndpointConfig(BaseModel):
     method: HttpMethod = Field(default=HttpMethod.GET)
     endpoint: str
+    json_entrypoint: Optional[str] = None
     body: dict[str, Any] = Field(default_factory=dict)
     params: dict[str, Any] = Field(default_factory=dict)
     data_model: Type[BaseModel]

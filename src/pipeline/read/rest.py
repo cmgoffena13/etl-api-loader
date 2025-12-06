@@ -31,17 +31,10 @@ class RESTReader(BaseReader):
         if self.authentication_strategy is not None:
             request = self.authentication_strategy.apply(self.client, request)
 
-        batch = [None] * self.batch_size
-        batch_index = 0
         if self.pagination_strategy is not None:
             async for page_items in self.pagination_strategy.pages(request):
-                for item in page_items:
-                    batch[batch_index] = item
-                    batch_index += 1
-                    if batch_index == self.batch_size:
-                        yield batch
-                        batch[:] = [None] * self.batch_size
-                        batch_index = 0
+                for batch in self._batch_items(page_items, endpoint_config):
+                    yield batch
         else:
             method_function = getattr(self.client, method.lower())
             response = await method_function(
@@ -54,14 +47,5 @@ class RESTReader(BaseReader):
 
             data = response.json()
             items = data if isinstance(data, list) else [data]
-
-            for item in items:
-                batch[batch_index] = item
-                batch_index += 1
-                if batch_index == self.batch_size:
-                    yield batch
-                    batch[:] = [None] * self.batch_size
-                    batch_index = 0
-
-        if batch_index > 0:
-            yield batch[:batch_index]
+            for batch in self._batch_items(items, endpoint_config):
+                yield batch

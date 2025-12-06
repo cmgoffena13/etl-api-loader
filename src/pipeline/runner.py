@@ -18,8 +18,9 @@ class PipelineRunner:
         self.client = client
         self.reader = ReaderFactory.create_reader(source=config, client=client)
 
-    def read(self):
-        return self.reader.read(endpoint=self.endpoint, method=self.method)
+    async def read(self):
+        async for batch in self.reader.read(endpoint=self.endpoint, method=self.method):
+            yield batch
 
     def validate(self):
         pass

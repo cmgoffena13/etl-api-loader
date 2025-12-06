@@ -21,6 +21,21 @@ class BaseReader(ABC):
             source=source, client=client
         )
 
+    def _batch_items(self, items, endpoint_config):
+        batch = [None] * self.batch_size
+        batch_index = 0
+        for item in items:
+            if endpoint_config.json_entrypoint is not None:
+                item = item[endpoint_config.json_entrypoint]
+            batch[batch_index] = item
+            batch_index += 1
+            if batch_index == self.batch_size:
+                yield batch
+                batch[:] = [None] * self.batch_size
+                batch_index = 0
+        if batch_index > 0:
+            yield batch[:batch_index]
+
     @abstractmethod
     async def read(
         self, endpoint: str, method: HttpMethod
