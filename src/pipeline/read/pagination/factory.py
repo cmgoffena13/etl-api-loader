@@ -1,3 +1,5 @@
+from typing import Optional
+
 from src.pipeline.read.pagination.base import BasePaginationStrategy
 from src.pipeline.read.pagination.offset import OffsetPaginationStrategy
 from src.sources.base import APIConfig
@@ -11,7 +13,11 @@ class PaginationStrategyFactory:
         return list(cls._strategies.keys())
 
     @classmethod
-    def create_strategy(cls, source: APIConfig, **kwargs) -> BasePaginationStrategy:
+    def create_strategy(
+        cls, source: APIConfig, **kwargs
+    ) -> Optional[BasePaginationStrategy]:
+        if source.pagination_strategy is None:
+            return None
         try:
             strategy = cls._strategies[source.pagination_strategy]
             return strategy(**kwargs)

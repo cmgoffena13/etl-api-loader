@@ -1,4 +1,4 @@
-from typing import Any, Literal, Type
+from typing import Any, Literal, Optional, Type
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -19,8 +19,8 @@ class APIEndpointConfig(BaseModel):
 class APIConfig(BaseModel):
     base_url: str
     type: Literal["rest", "graphql"]
-    pagination_strategy: Literal["offset"] = None
-    authentication_strategy: Literal["auth", "bearer"] = None
+    pagination_strategy: Optional[Literal["offset"]] = None
+    authentication_strategy: Optional[Literal["auth", "bearer"]] = None
     default_headers: dict[str, str]
     pagination: dict[str, Any] = Field(default_factory=dict)
     endpoints: list[APIEndpointConfig] = Field(default_factory=list)

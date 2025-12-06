@@ -1,6 +1,6 @@
 from typing import Any
 
-from src.pipeline.reader.base import BaseReader
+from src.pipeline.read.base import BaseReader
 from src.sources.base import APIConfig
 
 

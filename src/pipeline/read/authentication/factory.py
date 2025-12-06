@@ -1,3 +1,5 @@
+from typing import Optional
+
 from src.pipeline.read.authentication.auth import AuthAuthenticationStrategy
 from src.pipeline.read.authentication.base import BaseAuthenticationStrategy
 from src.pipeline.read.authentication.bearer import BearerAuthenticationStrategy
@@ -15,7 +17,11 @@ class AuthenticationStrategyFactory:
         return list(cls._strategies.keys())
 
     @classmethod
-    def create_strategy(cls, source: APIConfig, **kwargs) -> BaseAuthenticationStrategy:
+    def create_strategy(
+        cls, source: APIConfig, **kwargs
+    ) -> Optional[BaseAuthenticationStrategy]:
+        if source.authentication_strategy is None:
+            return None
         try:
             strategy = cls._strategies[source.authentication_strategy]
             return strategy(**kwargs)
