@@ -52,6 +52,8 @@ class GlobalConfig(BaseConfig):
     OPEN_TELEMETRY_AUTHORIZATION_TOKEN: Optional[str] = None
     OPEN_TELEMETRY_FLAG: bool = False
 
+    BATCH_SIZE: int = 10000
+
     # AWS Secrets Manager settings
     AWS_ACCESS_KEY_ID: Optional[str] = None
     AWS_SECRET_ACCESS_KEY: Optional[str] = None
@@ -79,6 +81,7 @@ class DevConfig(GlobalConfig):
 class TestConfig(GlobalConfig):
     LOG_LEVEL: str = "DEBUG"
     OTEL_PYTHON_LOG_CORRELATION: bool = False
+    BATCH_SIZE: int = 100
 
     model_config = SettingsConfigDict(env_prefix="TEST_")
 

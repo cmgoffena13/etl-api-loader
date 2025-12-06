@@ -18,7 +18,7 @@ class PipelineRunner:
         self.reader = ReaderFactory.create_reader(source=config)
 
     def read(self):
-        pass
+        yield from self.reader.read()
 
     def validate(self):
         pass
