@@ -1,5 +1,7 @@
 from abc import ABC, abstractmethod
-from typing import Any, Callable
+from collections.abc import AsyncGenerator
+
+from httpx import Request
 
 from src.processor.client import AsyncProductionHTTPClient
 from src.sources.base import APIConfig
@@ -11,5 +13,5 @@ class BasePaginationStrategy(ABC):
         self.client = client
 
     @abstractmethod
-    def paginate(self, query_function: Callable, *args) -> Any:
+    async def pages(self, request: Request) -> AsyncGenerator[list[dict], None]:
         pass

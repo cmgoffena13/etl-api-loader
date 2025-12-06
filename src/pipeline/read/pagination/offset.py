@@ -24,7 +24,7 @@ class OffsetPaginationStrategy(BasePaginationStrategy):
         self.max_concurrent = source.pagination.max_concurrent
         self.semaphore = asyncio.Semaphore(self.max_concurrent)
 
-    async def fetch_offset(
+    async def _fetch_offset(
         self,
         request: Request,
         offset: int,
@@ -47,7 +47,7 @@ class OffsetPaginationStrategy(BasePaginationStrategy):
             for index in range(self.max_concurrent):
                 current_offset = offset + (index * self.limit)
                 tasks.append(
-                    self.fetch_offset(
+                    self._fetch_offset(
                         request=request,
                         offset=current_offset,
                     )
