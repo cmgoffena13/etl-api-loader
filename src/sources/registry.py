@@ -12,12 +12,10 @@ class SourceRegistry(BaseModel):
 
     def get_source(self, base_url: str, endpoint: str, method: HttpMethod) -> APIConfig:
         for source in self.sources:
-            if (
-                source.base_url == base_url
-                and source.endpoint == endpoint
-                and source.method == method
-            ):
-                return source
+            if source.base_url == base_url:
+                for ep in source.endpoints:
+                    if ep.endpoint == endpoint and ep.method == method:
+                        return source
         raise ValueError(
             f"Source not found for base_url: {base_url}, endpoint: {endpoint}, method: {method}"
         )

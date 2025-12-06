@@ -11,6 +11,7 @@ logger = structlog.getLogger(__name__)
 class Processor:
     def __init__(self):
         self.client = AsyncProductionHTTPClient()
+        self._closed = False
 
     async def process(self, base_url: str, endpoint: str, method: HttpMethod):
         source = MASTER_SOURCE_REGISTRY.get_source(base_url, endpoint, method)
@@ -21,8 +22,10 @@ class Processor:
         await self.close()
 
     async def close(self):
-        await self.client.close()
+        if not self._closed:
+            await self.client.close()
+            self._closed = True
 
     def __del__(self):
-        if self.client:
+        if not self._closed and self.client:
             logger.warning("Processor client not closed before deletion")

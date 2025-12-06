@@ -22,7 +22,7 @@ class RESTReader(BaseReader):
         )
         url = f"{self.source.base_url}{endpoint_config.endpoint}"
         request = httpx.Request(
-            method=method.value,
+            method=method,
             url=url,
             headers=self.source.default_headers,
             json=endpoint_config.body,
