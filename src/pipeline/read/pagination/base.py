@@ -4,7 +4,7 @@ from collections.abc import AsyncGenerator
 from httpx import Request
 
 from src.processor.client import AsyncProductionHTTPClient
-from src.sources.base import APIConfig
+from src.sources.base import APIConfig, APIEndpointConfig
 
 
 class BasePaginationStrategy(ABC):
@@ -13,5 +13,9 @@ class BasePaginationStrategy(ABC):
         self.client = client
 
     @abstractmethod
-    async def pages(self, request: Request) -> AsyncGenerator[list[dict], None]:
+    async def pages(
+        self,
+        request: Request,
+        endpoint_config: APIEndpointConfig,
+    ) -> AsyncGenerator[list[dict], None]:
         pass

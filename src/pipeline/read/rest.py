@@ -12,6 +12,20 @@ class RESTReader(BaseReader):
     def __init__(self, source: APIConfig, client: AsyncProductionHTTPClient):
         super().__init__(source=source, client=client)
 
+    def _batch_items(self, items):
+        """Helper method to batch items and yield batches."""
+        batch = [None] * self.batch_size
+        batch_index = 0
+        for item in items:
+            batch[batch_index] = item
+            batch_index += 1
+            if batch_index == self.batch_size:
+                yield batch
+                batch[:] = [None] * self.batch_size
+                batch_index = 0
+        if batch_index > 0:
+            yield batch[:batch_index]
+
     async def read(
         self, endpoint: str, method: HttpMethod
     ) -> AsyncGenerator[list[dict], None]:
@@ -32,8 +46,10 @@ class RESTReader(BaseReader):
             request = self.authentication_strategy.apply(self.client, request)
 
         if self.pagination_strategy is not None:
-            async for page_items in self.pagination_strategy.pages(request):
-                for batch in self._batch_items(page_items, endpoint_config):
+            async for page_items in self.pagination_strategy.pages(
+                request, endpoint_config
+            ):
+                for batch in self._batch_items(page_items):
                     yield batch
         else:
             method_function = getattr(self.client, method.lower())
@@ -46,6 +62,9 @@ class RESTReader(BaseReader):
             response.raise_for_status()
 
             data = response.json()
-            items = data if isinstance(data, list) else [data]
-            for batch in self._batch_items(items, endpoint_config):
+            if endpoint_config.json_entrypoint is not None:
+                items = data[endpoint_config.json_entrypoint]
+            else:
+                items = data if isinstance(data, list) else [data]
+            for batch in self._batch_items(items):
                 yield batch

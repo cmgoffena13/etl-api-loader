@@ -1,13 +1,15 @@
 import asyncio
 
+from src.logging_conf import setup_logging
 from src.processor.processor import Processor
 
 
 async def main():
+    setup_logging()
     processor = Processor()
     await processor.process(
-        base_url="https://jsonplaceholder.typicode.com",
-        endpoint="/posts",
+        base_url="https://dummyjson.com",
+        endpoint="/products",
         method="GET",
     )
 

@@ -1,11 +1,15 @@
 import asyncio
 from collections.abc import AsyncGenerator
 
+import httpx
+import structlog
 from httpx import Request
 
 from src.pipeline.read.pagination.base import BasePaginationStrategy
 from src.processor.client import AsyncProductionHTTPClient
-from src.sources.base import APIConfig
+from src.sources.base import APIConfig, APIEndpointConfig
+
+logger = structlog.getLogger(__name__)
 
 
 class OffsetPaginationStrategy(BasePaginationStrategy):
@@ -28,18 +32,60 @@ class OffsetPaginationStrategy(BasePaginationStrategy):
         self,
         request: Request,
         offset: int,
+        endpoint_config: APIEndpointConfig,
     ) -> list[dict]:
         async with self.semaphore:
-            request.params[self.offset_param] = offset
-            request.params[self.limit_param] = self.limit
+            params = dict(request.url.params)
+            params[self.offset_param] = offset
+            params[self.limit_param] = self.limit
             method_function = getattr(self.client, request.method.lower())
-            response = await method_function(url=request.url, params=request.params)
-            response.raise_for_status()
+            url = str(request.url.copy_with(query=None))
+            logger.debug(
+                "Fetching paginated page",
+                url=url,
+                method=request.method,
+                params=params,
+                offset=offset,
+            )
+            try:
+                response = await method_function(
+                    url=url,
+                    headers=request.headers,
+                    params=params,
+                )
+                logger.debug(
+                    "Received response",
+                    status_code=response.status_code,
+                    url=str(response.url),
+                )
+                response.raise_for_status()
+            except httpx.HTTPStatusError as e:
+                if e.response.status_code == 400:
+                    logger.debug(
+                        "400 Bad Request - stopping pagination",
+                        url=str(e.request.url),
+                        offset=offset,
+                        response_text=e.response.text[:200]
+                        if e.response.text
+                        else None,
+                    )
+                    return []
+                raise
+
             data = response.json()
-            items = data if isinstance(data, list) else [data]
+
+            if endpoint_config.json_entrypoint is not None:
+                items = data[endpoint_config.json_entrypoint]
+            else:
+                items = data if isinstance(data, list) else [data]
+
             return items
 
-    async def pages(self, request: Request) -> AsyncGenerator[list[dict], None]:
+    async def pages(
+        self,
+        request: Request,
+        endpoint_config: APIEndpointConfig,
+    ) -> AsyncGenerator[list[dict], None]:
         offset = self.start_offset
 
         while True:
@@ -50,6 +96,7 @@ class OffsetPaginationStrategy(BasePaginationStrategy):
                     self._fetch_offset(
                         request=request,
                         offset=current_offset,
+                        endpoint_config=endpoint_config,
                     )
                 )
 

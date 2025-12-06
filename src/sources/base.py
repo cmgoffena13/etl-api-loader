@@ -22,7 +22,7 @@ class APIEndpointConfig(BaseModel):
     method: HttpMethod = Field(default=HttpMethod.GET)
     endpoint: str
     json_entrypoint: Optional[str] = None
-    body: dict[str, Any] = Field(default_factory=dict)
+    body: Optional[dict[str, Any]] = None
     params: dict[str, Any] = Field(default_factory=dict)
     data_model: Type[BaseModel]
     nested: list["APIEndpointConfig"] = Field(default_factory=list)
