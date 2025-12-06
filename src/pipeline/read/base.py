@@ -1,15 +1,17 @@
 from abc import ABC, abstractmethod
-from typing import Any
+from typing import Generator
 
 from src.pipeline.read.authentication.factory import AuthenticationStrategyFactory
 from src.pipeline.read.pagination.factory import PaginationStrategyFactory
+from src.processor.client import AsyncProductionHTTPClient
 from src.settings import config
 from src.sources.base import APIConfig
 
 
 class BaseReader(ABC):
-    def __init__(self, source: APIConfig):
+    def __init__(self, source: APIConfig, client: AsyncProductionHTTPClient):
         self.source = source
+        self.client = client
         self.batch_size = config.BATCH_SIZE
         self.authentication_strategy = AuthenticationStrategyFactory.create_strategy(
             source=source
@@ -19,5 +21,5 @@ class BaseReader(ABC):
         )
 
     @abstractmethod
-    def read(self) -> Any:
+    def read(self) -> Generator[dict]:
         pass

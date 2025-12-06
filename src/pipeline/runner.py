@@ -15,7 +15,7 @@ class PipelineRunner:
         self.endpoint = endpoint
         self.config = config
         self.client = client
-        self.reader = ReaderFactory.create_reader(source=config)
+        self.reader = ReaderFactory.create_reader(source=config, client=client)
 
     def read(self):
         yield from self.reader.read()
