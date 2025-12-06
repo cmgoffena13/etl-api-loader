@@ -1,7 +1,7 @@
 from src.enum import HttpMethod
 from src.pipeline.read.factory import ReaderFactory
 from src.processor.client import AsyncProductionHTTPClient
-from src.sources.base import APISourceConfig
+from src.sources.base import APIConfig
 
 
 class PipelineRunner:
@@ -9,11 +9,10 @@ class PipelineRunner:
         self,
         endpoint: str,
         method: HttpMethod,
-        config: APISourceConfig,
+        config: APIConfig,
         client: AsyncProductionHTTPClient,
     ):
         self.config = config
-        self.base_url = config.base_url
         self.endpoint = endpoint
         self.method = method
         self.client = client
@@ -28,5 +27,6 @@ class PipelineRunner:
     def write(self):
         pass
 
-    def run(self):
-        pass
+    async def run(self):
+        async for batch in self.read():
+            print(batch)

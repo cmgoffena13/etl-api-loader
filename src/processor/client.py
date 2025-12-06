@@ -1,19 +1,5 @@
-"""
-httpx Best Practices for Production Environments
-
-This module provides production-ready HTTP clients with:
-- Connection pooling via client reuse
-- Exponential backoff with jitter for retries
-- Retry logic for transient errors (5xx, 429, network errors)
-- Retry-After header support for rate limiting (429) and service unavailable (503)
-- Configurable timeouts and retry limits
-- Comprehensive error handling and logging
-- Both sync (ProductionHTTPClient) and async (AsyncProductionHTTPClient) variants
-"""
-
 import asyncio
 import random
-import time
 from typing import Optional
 
 import httpx
@@ -85,115 +71,6 @@ def _calculate_backoff_for_response(
     return _calculate_backoff(attempt)
 
 
-class ProductionHTTPClient:
-    def __init__(
-        self,
-        base_url: Optional[str] = None,
-        connect_timeout: float = 5.0,
-        read_timeout: float = 10.0,
-        write_timeout: float = 5.0,
-        pool_timeout: float = 2.0,
-        max_connections: int = 50,
-        max_keepalive_connections: int = 20,
-        keepalive_expiry: float = 30.0,
-        max_attempts: int = 5,  # Total number of attempts (initial + retries)
-        default_headers: Optional[dict] = None,
-    ):
-        self.base_url = base_url
-        self.max_attempts = max_attempts
-
-        # Configure timeout with individual timeout controls
-        httpx_timeout = httpx.Timeout(
-            connect=connect_timeout,  # Max seconds to wait while establishing the TCP connection
-            read=read_timeout,  # Max seconds to wait to receive data (response body reading)
-            write=write_timeout,  # Max seconds to wait to send data (request body sending)
-            pool=pool_timeout,  # Max seconds to wait when trying to acquire a connection from the pool
-        )
-
-        self.client = httpx.Client(
-            base_url=base_url,
-            timeout=httpx_timeout,
-            headers=default_headers,
-            limits=httpx.Limits(
-                max_keepalive_connections=max_keepalive_connections,
-                max_connections=max_connections,
-                keepalive_expiry=keepalive_expiry,
-            ),
-            http2=True,
-        )
-
-    def close(self):
-        """Clean up the client and close all connections."""
-        self.client.close()
-
-    def __enter__(self):
-        """Sync context manager entry."""
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        """Sync context manager exit."""
-        self.close()
-
-    def request_with_retry(self, method: str, url: str, **kwargs) -> httpx.Response:
-        """Make an HTTP request with automatic retry for transient errors."""
-        last_exception = None
-
-        for attempt in range(self.max_attempts):
-            try:
-                response = self.client.request(method, url, **kwargs)
-
-                if response.status_code in RETRIABLE_STATUS_CODES:
-                    if attempt < self.max_attempts - 1:
-                        error_desc = RETRIABLE_STATUS_CODES[response.status_code]
-                        backoff = _calculate_backoff_for_response(
-                            response.status_code, response.headers, attempt
-                        )
-                        logger.warning(
-                            f"{error_desc} on {method} {url}, retrying in {backoff:.2f}s (attempt {attempt + 1}/{self.max_attempts})"
-                        )
-                        time.sleep(backoff)
-                        continue
-                    else:
-                        response.raise_for_status()
-
-                elif 400 <= response.status_code < 500:
-                    response.raise_for_status()
-
-                return response
-
-            except HTTPX_EXCEPTIONS_KEYS as e:
-                last_exception = e
-                error_desc = HTTPX_EXCEPTIONS[type(e)]
-                if attempt < self.max_attempts - 1:
-                    backoff = _calculate_backoff(attempt)
-                    logger.warning(
-                        f"{error_desc} on {method} {url}, retrying in {backoff:.2f}s (attempt {attempt + 1}/{self.max_attempts})"
-                    )
-                    time.sleep(backoff)
-                else:
-                    raise
-
-        if last_exception:
-            raise last_exception
-        raise RuntimeError("Unexpected error in request_with_retry")
-
-    def get(self, url: str, **kwargs) -> httpx.Response:
-        """GET request with retry logic."""
-        return self.request_with_retry("GET", url, **kwargs)
-
-    def post(self, url: str, **kwargs) -> httpx.Response:
-        """POST request without retry logic (POST is not idempotent)."""
-        return self.client.request("POST", url, **kwargs)
-
-    def put(self, url: str, **kwargs) -> httpx.Response:
-        """PUT request with retry logic."""
-        return self.request_with_retry("PUT", url, **kwargs)
-
-    def delete(self, url: str, **kwargs) -> httpx.Response:
-        """DELETE request with retry logic."""
-        return self.request_with_retry("DELETE", url, **kwargs)
-
-
 class AsyncProductionHTTPClient:
     def __init__(
         self,
@@ -219,17 +96,20 @@ class AsyncProductionHTTPClient:
             pool=pool_timeout,  # Max seconds to wait when trying to acquire a connection from the pool
         )
 
-        self.client = httpx.AsyncClient(
-            base_url=base_url,
-            timeout=httpx_timeout,
-            headers=default_headers,
-            limits=httpx.Limits(
-                max_keepalive_connections=20,  # Keep connections alive
-                max_connections=50,  # Max total connections
-                keepalive_expiry=30.0,  # Keep connections for 30s
+        client_kwargs = {
+            "timeout": httpx_timeout,
+            "headers": default_headers,
+            "limits": httpx.Limits(
+                max_keepalive_connections=max_keepalive_connections,
+                max_connections=max_connections,
+                keepalive_expiry=keepalive_expiry,
             ),
-            http2=True,  # Enable HTTP/2 for better connection reuse
-        )
+            "http2": True,  # Enable HTTP/2 for better connection reuse
+        }
+        if base_url is not None:
+            client_kwargs["base_url"] = base_url
+
+        self.client = httpx.AsyncClient(**client_kwargs)
 
     async def close(self):
         """Clean up the client and close all connections."""
