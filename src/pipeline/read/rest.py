@@ -19,7 +19,7 @@ class RESTReader(BaseReader):
             method="GET",
             url=url,
             headers=self.source.default_headers,
-            params=endpoint_config.params,
+            params=endpoint_config.default_params,
         )
         if self.authentication_strategy is not None:
             request = self.authentication_strategy.apply(self.client, request)
@@ -35,7 +35,7 @@ class RESTReader(BaseReader):
                 url,
                 backoff_starting_delay=endpoint_config.backoff_starting_delay,
                 headers=dict(request.headers),
-                params=endpoint_config.params,
+                params=endpoint_config.default_params,
             )
             response.raise_for_status()
 

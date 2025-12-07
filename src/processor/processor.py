@@ -39,7 +39,6 @@ class Processor:
         )
         result = await runner.run()
         self.results.append(result)
-        await self.close()
 
     async def process_api(self, name: str):
         source = MASTER_SOURCE_REGISTRY.get_source(name)
@@ -53,7 +52,6 @@ class Processor:
             )
             result = await runner.run()
             self.results.append(result)
-        await self.close()
 
     def _worker(self):
         async def worker_loop():
@@ -85,6 +83,7 @@ class Processor:
             if not self._thread_pool_shutdown:
                 self.thread_pool.shutdown(wait=True)
                 self._thread_pool_shutdown = True
+            asyncio.run(self.close())
 
     async def close(self):
         if not self._closed:
