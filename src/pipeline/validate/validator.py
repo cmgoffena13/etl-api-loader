@@ -24,7 +24,6 @@ class Validator:
                 batch[batch_index] = record
                 batch_index += 1
             except ValidationError as e:
-                logger.error(f"Validation error: {e}")
                 raise e
 
             if batch_index == self.batch_size:

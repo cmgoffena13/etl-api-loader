@@ -1,8 +1,12 @@
+import structlog
+
 from src.enum import HttpMethod
 from src.pipeline.read.factory import ReaderFactory
 from src.pipeline.validate.validator import Validator
 from src.processor.client import AsyncProductionHTTPClient
 from src.sources.base import APIConfig
+
+logger = structlog.getLogger(__name__)
 
 
 class PipelineRunner:
@@ -37,5 +41,9 @@ class PipelineRunner:
         pass
 
     async def run(self):
-        async for batch in self.read():
-            self.validate(batch=batch)
+        try:
+            async for batch in self.read():
+                self.validate(batch=batch)
+        except Exception as e:
+            logger.exception(e)
+            raise e
