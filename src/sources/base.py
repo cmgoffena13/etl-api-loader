@@ -26,6 +26,10 @@ class OffsetPaginationConfig(PaginationConfig):
         return self
 
 
+class NextUrlPaginationConfig(PaginationConfig):
+    next_url_key: str = Field(default="next_url")
+
+
 class APIEndpointConfig(BaseModel):
     json_entrypoint: Optional[str] = None
     body: Optional[dict[str, Any]] = None
@@ -41,9 +45,10 @@ class APIConfig(BaseModel):
     name: str
     base_url: str
     type: Literal["rest", "graphql"]
-    pagination_strategy: Optional[Literal["offset"]] = None
+    pagination_strategy: Optional[Literal["offset", "next_url"]] = None
     pagination: Optional[PaginationConfig] = None
     authentication_strategy: Optional[Literal["auth", "bearer"]] = None
+    authentication_token: Optional[str] = None
     default_headers: dict[str, str] = Field(default_factory=dict)
     endpoints: dict[str, APIEndpointConfig] = Field(default_factory=dict)
     nested_relations: dict[str, list[str]] = Field(default_factory=dict)

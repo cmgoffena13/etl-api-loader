@@ -75,6 +75,9 @@ class GlobalConfig(BaseConfig):
     GOOGLE_APPLICATION_CREDENTIALS: Optional[str] = None
     GOOGLE_CLOUD_PROJECT: Optional[str] = None
 
+    # API Secrets
+    POLYGON_API_KEY: Optional[str] = None
+
 
 class DevConfig(GlobalConfig):
     LOG_LEVEL: str = "DEBUG"  # Overrides the global LOG_LEVEL

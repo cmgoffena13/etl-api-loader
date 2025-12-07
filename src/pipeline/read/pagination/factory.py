@@ -1,13 +1,17 @@
 from typing import Optional
 
 from src.pipeline.read.pagination.base import BasePaginationStrategy
+from src.pipeline.read.pagination.next_url import NextURLPaginationStrategy
 from src.pipeline.read.pagination.offset import OffsetPaginationStrategy
 from src.processor.client import AsyncProductionHTTPClient
 from src.sources.base import APIConfig
 
 
 class PaginationStrategyFactory:
-    _strategies = {"offset": OffsetPaginationStrategy}
+    _strategies = {
+        "offset": OffsetPaginationStrategy,
+        "next_url": NextURLPaginationStrategy,
+    }
 
     @classmethod
     def get_supported_strategies(cls) -> list[type[BasePaginationStrategy]]:

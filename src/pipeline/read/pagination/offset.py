@@ -8,7 +8,7 @@ from httpx import Request
 from src.pipeline.read.json_utils import extract_items
 from src.pipeline.read.pagination.base import BasePaginationStrategy
 from src.processor.client import AsyncProductionHTTPClient
-from src.sources.base import APIConfig, APIEndpointConfig
+from src.sources.base import APIConfig, APIEndpointConfig, OffsetPaginationConfig
 
 logger = structlog.getLogger(__name__)
 
@@ -21,6 +21,10 @@ class OffsetPaginationStrategy(BasePaginationStrategy):
     ):
         super().__init__(source=source, client=client)
         self.client = client
+        if not isinstance(source.pagination, OffsetPaginationConfig):
+            raise ValueError(
+                f"Expected OffsetPaginationConfig, got {type(source.pagination)}"
+            )
         self.offset = source.pagination.offset
         self.limit = source.pagination.limit
         self.offset_param = source.pagination.offset_param
