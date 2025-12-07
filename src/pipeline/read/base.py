@@ -5,7 +5,7 @@ from src.pipeline.read.authentication.factory import AuthenticationStrategyFacto
 from src.pipeline.read.pagination.factory import PaginationStrategyFactory
 from src.processor.client import AsyncProductionHTTPClient
 from src.settings import config
-from src.sources.base import APIConfig
+from src.sources.base import APIConfig, APIEndpointConfig
 
 
 class BaseReader(ABC):
@@ -20,12 +20,10 @@ class BaseReader(ABC):
             source=source, client=client
         )
 
-    def _batch_items(self, items, endpoint_config):
+    def _batch_items(self, items: list[dict]) -> AsyncGenerator[list[dict], None]:
         batch = [None] * self.batch_size
         batch_index = 0
         for item in items:
-            if endpoint_config.json_entrypoint is not None:
-                item = item[endpoint_config.json_entrypoint]
             batch[batch_index] = item
             batch_index += 1
             if batch_index == self.batch_size:
@@ -36,5 +34,7 @@ class BaseReader(ABC):
             yield batch[:batch_index]
 
     @abstractmethod
-    async def read(self, endpoint: str) -> AsyncGenerator[list[dict], None]:
+    async def read(
+        self, url: str, endpoint_config: APIEndpointConfig
+    ) -> AsyncGenerator[list[dict], None]:
         pass

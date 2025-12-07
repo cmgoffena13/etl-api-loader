@@ -4,31 +4,16 @@ import httpx
 
 from src.pipeline.read.base import BaseReader
 from src.processor.client import AsyncProductionHTTPClient
-from src.sources.base import APIConfig
+from src.sources.base import APIConfig, APIEndpointConfig
 
 
 class RESTReader(BaseReader):
     def __init__(self, source: APIConfig, client: AsyncProductionHTTPClient):
         super().__init__(source=source, client=client)
 
-    def _batch_items(self, items):
-        """Helper method to batch items and yield batches."""
-        batch = [None] * self.batch_size
-        batch_index = 0
-        for item in items:
-            batch[batch_index] = item
-            batch_index += 1
-            if batch_index == self.batch_size:
-                yield batch
-                batch[:] = [None] * self.batch_size
-                batch_index = 0
-        if batch_index > 0:
-            yield batch[:batch_index]
-
-    async def read(self, endpoint: str) -> AsyncGenerator[list[dict], None]:
-        endpoint_config = self.source.endpoints[endpoint]
-        base_url = self.source.base_url.rstrip("/") + "/"
-        url = f"{base_url}{endpoint}"
+    async def read(
+        self, url: str, endpoint_config: APIEndpointConfig
+    ) -> AsyncGenerator[list[dict], None]:
         request = httpx.Request(
             method="GET",
             url=url,

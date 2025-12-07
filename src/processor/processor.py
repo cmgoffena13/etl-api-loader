@@ -18,19 +18,26 @@ class Processor:
             max_workers=psutil.cpu_count(logical=False)
         )
 
-    async def process_endpoint(self, base_url: str, endpoint: str):
-        source = MASTER_SOURCE_REGISTRY.get_source(base_url, endpoint)
-        runner = PipelineRunner(endpoint=endpoint, config=source, client=self.client)
+    async def process_endpoint(self, name: str, endpoint: str):
+        source = MASTER_SOURCE_REGISTRY.get_source(name)
+        endpoint_config = source.endpoints[endpoint]
+        runner = PipelineRunner(
+            source=source,
+            endpoint=endpoint,
+            endpoint_config=endpoint_config,
+            client=self.client,
+        )
         await runner.run()
         await self.close()
 
-    async def process_api(self, base_url: str):
-        source = MASTER_SOURCE_REGISTRY.get_source(base_url)
+    async def process_api(self, name: str):
+        source = MASTER_SOURCE_REGISTRY.get_source(name)
         # Process Sequentially to respect API rate-limits
         for endpoint, endpoint_config in source.endpoints.items():
             runner = PipelineRunner(
+                source=source,
                 endpoint=endpoint,
-                config=source,
+                endpoint_config=endpoint_config,
                 client=self.client,
             )
             await runner.run()

@@ -16,7 +16,9 @@ async def test_rest_reader_no_pagination_single_request(
     reader.batch_size = 2
 
     batches = []
-    async for batch in reader.read(endpoint="items"):
+    url = "https://api.example.com/items"
+    endpoint_config = TEST_REST_CONFIG_NO_PAGINATION.endpoints["items"]
+    async for batch in reader.read(url=url, endpoint_config=endpoint_config):
         batches.append(list(batch))
     assert len(batches) == 2
     assert len(batches[0]) == 2
@@ -37,7 +39,9 @@ async def test_rest_reader_with_offset_pagination(
     reader.batch_size = 10
 
     batches = []
-    async for batch in reader.read(endpoint="items"):
+    url = "https://api.example.com/items"
+    endpoint_config = TEST_REST_CONFIG_NO_PAGINATION.endpoints["items"]
+    async for batch in reader.read(url=url, endpoint_config=endpoint_config):
         batches.append(list(batch))
 
     assert len(batches) == 3
