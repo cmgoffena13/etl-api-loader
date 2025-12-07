@@ -7,7 +7,7 @@ POLYGON_CONFIG = APIConfig(
     base_url="https://api.massive.com/v3/reference",
     type="rest",
     authentication_strategy="bearer",
-    authentication_token=config.POLYGON_API_KEY,
+    authentication_params={"token": config.POLYGON_API_KEY},
     pagination_strategy="next_url",
     pagination=NextUrlPaginationConfig(
         next_url_key="next_url",
@@ -16,6 +16,7 @@ POLYGON_CONFIG = APIConfig(
         "tickers": APIEndpointConfig(
             json_entrypoint="results",
             data_model=PolygonTicker,
+            backoff_starting_delay=60,
         )
     },
 )

@@ -34,6 +34,7 @@ class APIEndpointConfig(BaseModel):
     json_entrypoint: Optional[str] = None
     body: Optional[dict[str, Any]] = None
     params: dict[str, Any] = Field(default_factory=dict)
+    backoff_starting_delay: float = Field(default=1)
     data_model: Type[BaseModel]
     nested: list["APIEndpointConfig"] = Field(default_factory=list)
     extract_id: str = Field(default="id")
@@ -48,7 +49,7 @@ class APIConfig(BaseModel):
     pagination_strategy: Optional[Literal["offset", "next_url"]] = None
     pagination: Optional[PaginationConfig] = None
     authentication_strategy: Optional[Literal["auth", "bearer"]] = None
-    authentication_token: Optional[str] = None
+    authentication_params: Optional[dict[str, Any]] = None
     default_headers: dict[str, str] = Field(default_factory=dict)
     endpoints: dict[str, APIEndpointConfig] = Field(default_factory=dict)
     nested_relations: dict[str, list[str]] = Field(default_factory=dict)
@@ -58,5 +59,16 @@ class APIConfig(BaseModel):
         if self.pagination_strategy is not None and self.pagination is None:
             raise ValueError(
                 "pagination must be provided when pagination_strategy is set"
+            )
+        return self
+
+    @model_validator(mode="after")
+    def validate_authentication_config(self):
+        if (
+            self.authentication_strategy is not None
+            and self.authentication_params is None
+        ):
+            raise ValueError(
+                "authentication_params must be provided when authentication_strategy is set"
             )
         return self

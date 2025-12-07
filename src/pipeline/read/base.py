@@ -14,10 +14,10 @@ class BaseReader(ABC):
         self.client = client
         self.batch_size = config.BATCH_SIZE
         self.authentication_strategy = AuthenticationStrategyFactory.create_strategy(
-            source=source
+            self.source, **self.source.authentication_params
         )
         self.pagination_strategy = PaginationStrategyFactory.create_strategy(
-            source=source, client=client
+            source=self.source, client=self.client
         )
 
     def _batch_items(self, items: list[dict]) -> AsyncGenerator[list[dict], None]:

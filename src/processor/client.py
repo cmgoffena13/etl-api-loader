@@ -53,13 +53,18 @@ def _parse_retry_after(retry_after_header: Optional[str]) -> Optional[float]:
             return None
 
 
-def _calculate_backoff(attempt: int) -> float:
+def _calculate_backoff(attempt: int, backoff_starting_delay: float = 1) -> float:
     """Calculate exponential backoff delay with jitter."""
-    return random.uniform(0.8, 1.0) * (2**attempt)
+    start_delay = backoff_starting_delay - 0.2
+    end_delay = backoff_starting_delay + 0.2
+    return random.uniform(start_delay, end_delay) * (2**attempt)
 
 
 def _calculate_backoff_for_response(
-    status_code: int, headers: httpx.Headers, attempt: int
+    status_code: int,
+    headers: httpx.Headers,
+    attempt: int,
+    backoff_starting_delay: float = 1,
 ) -> float:
     """Calculate backoff delay for a response with retry logic."""
     # Respect Retry-After header for 429 (rate limiting) and 503 (service unavailable)
@@ -68,7 +73,7 @@ def _calculate_backoff_for_response(
         if retry_after is not None:
             return retry_after
 
-    return _calculate_backoff(attempt)
+    return _calculate_backoff(attempt, backoff_starting_delay)
 
 
 class AsyncProductionHTTPClient:
@@ -124,7 +129,7 @@ class AsyncProductionHTTPClient:
         await self.close()
 
     async def request_with_retry(
-        self, method: str, url: str, **kwargs
+        self, method: str, url: str, backoff_starting_delay: float = 1, **kwargs
     ) -> httpx.Response:
         """Make an HTTP request with automatic retry for transient errors."""
         last_exception = None
@@ -137,7 +142,10 @@ class AsyncProductionHTTPClient:
                     if attempt < self.max_attempts - 1:
                         error_desc = RETRIABLE_STATUS_CODES[response.status_code]
                         backoff = _calculate_backoff_for_response(
-                            response.status_code, response.headers, attempt
+                            response.status_code,
+                            response.headers,
+                            attempt,
+                            backoff_starting_delay,
                         )
                         logger.warning(
                             f"{error_desc} on {method} {url}, retrying in {backoff:.2f}s (attempt {attempt + 1}/{self.max_attempts})"
@@ -156,7 +164,7 @@ class AsyncProductionHTTPClient:
                 last_exception = e
                 error_desc = HTTPX_EXCEPTIONS[type(e)]
                 if attempt < self.max_attempts - 1:
-                    backoff = _calculate_backoff(attempt)
+                    backoff = _calculate_backoff(attempt, backoff_starting_delay)
                     logger.warning(
                         f"{error_desc} on {method} {url}, retrying in {backoff:.2f}s (attempt {attempt + 1}/{self.max_attempts})"
                     )
@@ -168,18 +176,32 @@ class AsyncProductionHTTPClient:
             raise last_exception
         raise RuntimeError("Unexpected error in request_with_retry")
 
-    async def get(self, url: str, **kwargs) -> httpx.Response:
+    async def get(
+        self, url: str, backoff_starting_delay: float = 1, **kwargs
+    ) -> httpx.Response:
         """GET request with retry logic."""
-        return await self.request_with_retry("GET", url, **kwargs)
+        return await self.request_with_retry(
+            "GET", url, backoff_starting_delay, **kwargs
+        )
 
-    async def post(self, url: str, **kwargs) -> httpx.Response:
+    async def post(
+        self, url: str, backoff_starting_delay: float = 1, **kwargs
+    ) -> httpx.Response:
         """POST request without retry logic (POST is not idempotent)."""
         return await self.client.request("POST", url, **kwargs)
 
-    async def put(self, url: str, **kwargs) -> httpx.Response:
+    async def put(
+        self, url: str, backoff_starting_delay: float = 1, **kwargs
+    ) -> httpx.Response:
         """PUT request with retry logic."""
-        return await self.request_with_retry("PUT", url, **kwargs)
+        return await self.request_with_retry(
+            "PUT", url, backoff_starting_delay, **kwargs
+        )
 
-    async def delete(self, url: str, **kwargs) -> httpx.Response:
+    async def delete(
+        self, url: str, backoff_starting_delay: float = 1, **kwargs
+    ) -> httpx.Response:
         """DELETE request with retry logic."""
-        return await self.request_with_retry("DELETE", url, **kwargs)
+        return await self.request_with_retry(
+            "DELETE", url, backoff_starting_delay, **kwargs
+        )

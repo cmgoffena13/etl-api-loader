@@ -26,11 +26,17 @@ class NextURLPaginationStrategy(BasePaginationStrategy):
             )
         self.next_url_key = source.pagination.next_url_key
 
-    async def _fetch_url(self, url: str, headers: dict) -> dict:
+    async def _fetch_url(
+        self, url: str, headers: dict, endpoint_config: APIEndpointConfig
+    ) -> dict:
         """Fetch a page using the provided URL."""
         logger.debug("Fetching paginated page", url=url)
         try:
-            response = await self.client.get(url=url, headers=headers)
+            response = await self.client.get(
+                url=url,
+                backoff_starting_delay=endpoint_config.backoff_starting_delay,
+                headers=headers,
+            )
             logger.debug(
                 "Received response",
                 status_code=response.status_code,
@@ -59,7 +65,9 @@ class NextURLPaginationStrategy(BasePaginationStrategy):
         headers = dict(request.headers)
 
         while True:
-            response_data = await self._fetch_url(url=current_url, headers=headers)
+            response_data = await self._fetch_url(
+                url=current_url, headers=headers, endpoint_config=endpoint_config
+            )
 
             if not response_data:
                 break

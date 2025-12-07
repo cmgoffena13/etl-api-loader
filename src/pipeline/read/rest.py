@@ -33,6 +33,7 @@ class RESTReader(BaseReader):
         else:
             response = await self.client.get(
                 url,
+                backoff_starting_delay=endpoint_config.backoff_starting_delay,
                 headers=dict(request.headers),
                 params=endpoint_config.params,
             )

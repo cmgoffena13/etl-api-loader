@@ -14,7 +14,10 @@ class SourceRegistry(BaseModel):
             if source.name == name:
                 return source
 
-        raise ValueError(f"Source not found for name: {name}")
+        available = ", ".join(source.name for source in self.sources)
+        raise ValueError(
+            f"Source not found for name: {name}. Available sources: {available}"
+        )
 
     def get_all_sources(self) -> list[APIConfig]:
         return self.sources
