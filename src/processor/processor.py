@@ -63,7 +63,7 @@ class Processor:
 
         return asyncio.run(worker_loop())
 
-    async def process(self):
+    def process(self):
         for source in MASTER_SOURCE_REGISTRY.get_all_sources():
             self.api_queue.put_nowait(source)
 
