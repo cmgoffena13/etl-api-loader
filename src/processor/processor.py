@@ -1,4 +1,7 @@
+import asyncio
 from concurrent.futures import ThreadPoolExecutor
+from queue import Empty, Queue
+from typing import Optional
 
 import psutil
 import structlog
@@ -14,9 +17,12 @@ class Processor:
     def __init__(self):
         self.client = AsyncProductionHTTPClient()
         self._closed = False
+        self._thread_pool_shutdown = False
         self.thread_pool: ThreadPoolExecutor = ThreadPoolExecutor(
             max_workers=psutil.cpu_count(logical=False)
         )
+        self.api_queue = Queue()
+        self.results: list[tuple[bool, str, Optional[str]]] = []
 
     async def process_endpoint(self, name: str, endpoint: str):
         source = MASTER_SOURCE_REGISTRY.get_source(name)
@@ -27,7 +33,8 @@ class Processor:
             endpoint_config=endpoint_config,
             client=self.client,
         )
-        await runner.run()
+        result = await runner.run()
+        self.results.append(result)
         await self.close()
 
     async def process_api(self, name: str):
@@ -40,7 +47,37 @@ class Processor:
                 endpoint_config=endpoint_config,
                 client=self.client,
             )
-            await runner.run()
+            result = await runner.run()
+            self.results.append(result)
+        await self.close()
+
+    def _worker(self):
+        async def worker_loop():
+            while True:
+                try:
+                    api = self.api_queue.get_nowait()
+                    await self.process_api(api.name)
+                    self.api_queue.task_done()
+                except Empty:
+                    break
+
+        return asyncio.run(worker_loop())
+
+    async def process(self):
+        for source in MASTER_SOURCE_REGISTRY.get_all_sources():
+            self.api_queue.put_nowait(source)
+
+        try:
+            futures = [
+                self.thread_pool.submit(self._worker)
+                for _ in range(self.thread_pool._max_workers)
+            ]
+            for future in futures:
+                future.result()
+        finally:
+            if not self._thread_pool_shutdown:
+                self.thread_pool.shutdown(wait=True)
+                self._thread_pool_shutdown = True
 
     async def close(self):
         if not self._closed:
@@ -48,5 +85,11 @@ class Processor:
             self._closed = True
 
     def __del__(self):
+        if not self._thread_pool_shutdown and self.thread_pool:
+            logger.warning("Processor thread pool not shut down before deletion")
+            self.thread_pool.shutdown(wait=True)
+            self._thread_pool_shutdown = True
         if not self._closed and self.client:
             logger.warning("Processor client not closed before deletion")
+            self.client.close()
+            self._closed = True

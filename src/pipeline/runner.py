@@ -1,3 +1,4 @@
+from typing import Optional
 from urllib.parse import urljoin
 
 import structlog
@@ -26,6 +27,7 @@ class PipelineRunner:
         self.client = client
         self.reader = ReaderFactory.create_reader(source=source, client=client)
         self.validator = Validator(endpoint_config=endpoint_config)
+        self.result: Optional[tuple[bool, str, Optional[str]]] = None
 
     async def read(self):
         async for batch in self.reader.read(
@@ -51,6 +53,8 @@ class PipelineRunner:
             async for batch in self.read():
                 async for validated_batch in self.validate(batch=batch):
                     print(validated_batch)
+            self.result = (True, self.url, None)
         except Exception as e:
             logger.exception(e)
-            raise e
+            self.result = (False, self.url, str(e))
+        return self.result

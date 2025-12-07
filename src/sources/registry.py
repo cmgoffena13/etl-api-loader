@@ -15,3 +15,6 @@ class SourceRegistry(BaseModel):
                 return source
 
         raise ValueError(f"Source not found for name: {name}")
+
+    def get_all_sources(self) -> list[APIConfig]:
+        return self.sources
