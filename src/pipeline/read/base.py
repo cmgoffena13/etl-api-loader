@@ -1,7 +1,6 @@
 from abc import ABC, abstractmethod
 from collections.abc import AsyncGenerator
 
-from src.enum import HttpMethod
 from src.pipeline.read.authentication.factory import AuthenticationStrategyFactory
 from src.pipeline.read.pagination.factory import PaginationStrategyFactory
 from src.processor.client import AsyncProductionHTTPClient
@@ -37,7 +36,5 @@ class BaseReader(ABC):
             yield batch[:batch_index]
 
     @abstractmethod
-    async def read(
-        self, endpoint: str, method: HttpMethod
-    ) -> AsyncGenerator[list[dict], None]:
+    async def read(self, endpoint: str) -> AsyncGenerator[list[dict], None]:
         pass

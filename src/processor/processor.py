@@ -3,7 +3,6 @@ from concurrent.futures import ThreadPoolExecutor
 import psutil
 import structlog
 
-from src.enum import HttpMethod
 from src.pipeline.runner import PipelineRunner
 from src.processor.client import AsyncProductionHTTPClient
 from src.sources.master import MASTER_SOURCE_REGISTRY
@@ -19,11 +18,9 @@ class Processor:
             max_workers=psutil.cpu_count(logical=False)
         )
 
-    async def process_endpoint(self, base_url: str, endpoint: str, method: HttpMethod):
-        source = MASTER_SOURCE_REGISTRY.get_source(base_url, endpoint, method)
-        runner = PipelineRunner(
-            endpoint=endpoint, method=method, config=source, client=self.client
-        )
+    async def process_endpoint(self, base_url: str, endpoint: str):
+        source = MASTER_SOURCE_REGISTRY.get_source(base_url, endpoint)
+        runner = PipelineRunner(endpoint=endpoint, config=source, client=self.client)
         await runner.run()
         await self.close()
 

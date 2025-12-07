@@ -2,7 +2,6 @@ from collections.abc import AsyncGenerator
 
 import httpx
 
-from src.enum import HttpMethod
 from src.pipeline.read.base import BaseReader
 from src.processor.client import AsyncProductionHTTPClient
 from src.sources.base import APIConfig
@@ -26,17 +25,13 @@ class RESTReader(BaseReader):
         if batch_index > 0:
             yield batch[:batch_index]
 
-    async def read(
-        self, endpoint: str, method: HttpMethod
-    ) -> AsyncGenerator[list[dict], None]:
+    async def read(self, endpoint: str) -> AsyncGenerator[list[dict], None]:
         endpoint_config = next(
-            ep
-            for ep in self.source.endpoints
-            if ep.endpoint == endpoint and ep.method == method
+            ep for ep in self.source.endpoints if ep.endpoint == endpoint
         )
         url = f"{self.source.base_url}{endpoint_config.endpoint}"
         request = httpx.Request(
-            method=method,
+            method="GET",
             url=url,
             headers=self.source.default_headers,
             json=endpoint_config.body,
@@ -52,8 +47,7 @@ class RESTReader(BaseReader):
                 for batch in self._batch_items(page_items):
                     yield batch
         else:
-            method_function = getattr(self.client, method.lower())
-            response = await method_function(
+            response = await self.client.get(
                 url,
                 json=endpoint_config.body,
                 headers=dict(request.headers),

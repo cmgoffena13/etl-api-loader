@@ -1,6 +1,5 @@
-from typing import Any
+from collections.abc import AsyncGenerator
 
-from src.enum import HttpMethod
 from src.pipeline.read.base import BaseReader
 from src.processor.client import AsyncProductionHTTPClient
 from src.sources.base import APIConfig
@@ -10,5 +9,5 @@ class GraphQLReader(BaseReader):
     def __init__(self, source: APIConfig, client: AsyncProductionHTTPClient):
         super().__init__(source=source, client=client)
 
-    def read(self, endpoint: str, method: HttpMethod) -> Any:
+    async def read(self, endpoint: str) -> AsyncGenerator[list[dict], None]:
         pass

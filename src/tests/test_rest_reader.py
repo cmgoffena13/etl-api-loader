@@ -1,6 +1,5 @@
 import pytest
 
-from src.enum import HttpMethod
 from src.pipeline.read.rest import RESTReader
 from src.tests.fixtures.test_configs.rest_configs import (
     TEST_REST_CONFIG_NO_PAGINATION,
@@ -17,7 +16,7 @@ async def test_rest_reader_no_pagination_single_request(
     reader.batch_size = 2
 
     batches = []
-    async for batch in reader.read(endpoint="/items", method=HttpMethod.GET):
+    async for batch in reader.read(endpoint="/items"):
         batches.append(list(batch))
     assert len(batches) == 2
     assert len(batches[0]) == 2
@@ -38,7 +37,7 @@ async def test_rest_reader_with_offset_pagination(
     reader.batch_size = 10
 
     batches = []
-    async for batch in reader.read(endpoint="/items", method=HttpMethod.GET):
+    async for batch in reader.read(endpoint="/items"):
         batches.append(list(batch))
 
     assert len(batches) == 3

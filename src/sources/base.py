@@ -2,8 +2,6 @@ from typing import Any, Literal, Optional, Type
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from src.enum import HttpMethod
-
 
 class PaginationConfig(BaseModel):
     pass
@@ -19,7 +17,6 @@ class OffsetPaginationConfig(PaginationConfig):
 
 
 class APIEndpointConfig(BaseModel):
-    method: HttpMethod = Field(default=HttpMethod.GET)
     endpoint: str
     json_entrypoint: Optional[str] = None
     body: Optional[dict[str, Any]] = None

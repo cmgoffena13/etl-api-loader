@@ -10,7 +10,6 @@ async def main():
     await processor.process_endpoint(
         base_url="https://dummyjson.com",
         endpoint="/products",
-        method="GET",
     )
 
 

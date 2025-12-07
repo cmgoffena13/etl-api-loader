@@ -1,4 +1,3 @@
-from src.enum import HttpMethod
 from src.sources.base import APIConfig, APIEndpointConfig, OffsetPaginationConfig
 from src.tests.fixtures.test_models.rest_models import TestItem
 
@@ -8,7 +7,6 @@ TEST_REST_CONFIG_NO_PAGINATION = APIConfig(
     endpoints=[
         APIEndpointConfig(
             endpoint="/items",
-            method=HttpMethod.GET,
             data_model=TestItem,
         )
     ],
@@ -29,7 +27,6 @@ TEST_REST_CONFIG_WITH_OFFSET_PAGINATION = APIConfig(
     endpoints=[
         APIEndpointConfig(
             endpoint="/items",
-            method=HttpMethod.GET,
             data_model=TestItem,
         )
     ],

@@ -1,6 +1,5 @@
 import structlog
 
-from src.enum import HttpMethod
 from src.pipeline.read.factory import ReaderFactory
 from src.pipeline.validate.validator import Validator
 from src.processor.client import AsyncProductionHTTPClient
@@ -13,23 +12,23 @@ class PipelineRunner:
     def __init__(
         self,
         endpoint: str,
-        method: HttpMethod,
         config: APIConfig,
         client: AsyncProductionHTTPClient,
     ):
         self.config = config
         self.endpoint = endpoint
-        self.method = method
         self.client = client
         self.reader = ReaderFactory.create_reader(source=config, client=client)
-        self.validator = Validator(source=config)
+        endpoint_config = next(ep for ep in config.endpoints if ep.endpoint == endpoint)
+        self.validator = Validator(endpoint_config=endpoint_config)
 
     async def read(self):
-        async for batch in self.reader.read(endpoint=self.endpoint, method=self.method):
+        async for batch in self.reader.read(endpoint=self.endpoint):
             yield batch
 
-    def validate(self, batch: list[dict]):
-        self.validator.validate(batch=batch)
+    async def validate(self, batch: list[dict]):
+        async for validated_batch in self.validator.validate(batch=batch):
+            yield validated_batch
 
     def write(self):
         pass
@@ -43,7 +42,8 @@ class PipelineRunner:
     async def run(self):
         try:
             async for batch in self.read():
-                self.validate(batch=batch)
+                async for validated_batch in self.validate(batch=batch):
+                    print(validated_batch)
         except Exception as e:
             logger.exception(e)
             raise e

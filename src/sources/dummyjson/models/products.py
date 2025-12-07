@@ -1,3 +1,5 @@
+from typing import Optional
+
 from pydantic import BaseModel
 from pydantic_extra_types.pendulum_dt import DateTime
 
@@ -33,7 +35,7 @@ class DummyJSONProduct(BaseModel):
     rating: float
     stock: int
     tags: list[str]
-    brand: str
+    brand: Optional[str] = None
     sku: str
     weight: int
     dimensions: Dimensions

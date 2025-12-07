@@ -4,31 +4,31 @@ import structlog
 from pydantic import TypeAdapter, ValidationError
 
 from src.settings import config
-from src.sources.base import APIConfig
+from src.sources.base import APIEndpointConfig
 
 logger = structlog.getLogger(__name__)
 
 
 class Validator:
-    def __init__(self, source: APIConfig):
-        self.source = source
-        self.adapter = TypeAdapter(self.source.data_model)
+    def __init__(self, endpoint_config: APIEndpointConfig):
+        self.endpoint_config = endpoint_config
+        self.adapter = TypeAdapter(endpoint_config.data_model)
         self.batch_size = config.BATCH_SIZE
 
-    def validate(self, batch: list[dict]) -> AsyncGenerator[list[dict], None]:
-        batch = [None] * self.batch_size
+    async def validate(self, batch: list[dict]) -> AsyncGenerator[list[dict], None]:
+        validated_batch = [None] * self.batch_size
         batch_index = 0
         for record in batch:
             try:
-                record = self.adapter.validate_python(record).model_dump()
-                batch[batch_index] = record
+                validated_record = self.adapter.validate_python(record).model_dump()
+                validated_batch[batch_index] = validated_record
                 batch_index += 1
             except ValidationError as e:
                 raise e
 
             if batch_index == self.batch_size:
-                yield batch
-                batch[:] = [None] * self.batch_size
+                yield validated_batch
+                validated_batch[:] = [None] * self.batch_size
                 batch_index = 0
         if batch_index > 0:
-            yield batch[:batch_index]
+            yield validated_batch[:batch_index]
