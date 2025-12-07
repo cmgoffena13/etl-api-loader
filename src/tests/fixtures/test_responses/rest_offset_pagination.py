@@ -1,4 +1,4 @@
-TEST_PAGE_1_RESPONSE = [
+TEST_REST_OFFSET_PAGINATION_PAGE_1_RESPONSE = [
     {"id": 1, "name": "Item 1"},
     {"id": 2, "name": "Item 2"},
     {"id": 3, "name": "Item 3"},
@@ -6,7 +6,7 @@ TEST_PAGE_1_RESPONSE = [
     {"id": 5, "name": "Item 5"},
 ]
 
-TEST_PAGE_2_RESPONSE = [
+TEST_REST_OFFSET_PAGINATION_PAGE_2_RESPONSE = [
     {"id": 6, "name": "Item 6"},
     {"id": 7, "name": "Item 7"},
     {"id": 8, "name": "Item 8"},
@@ -14,7 +14,7 @@ TEST_PAGE_2_RESPONSE = [
     {"id": 10, "name": "Item 10"},
 ]
 
-TEST_PAGE_3_RESPONSE = [
+TEST_REST_OFFSET_PAGINATION_PAGE_3_RESPONSE = [
     {"id": 11, "name": "Item 11"},
     {"id": 12, "name": "Item 12"},
 ]

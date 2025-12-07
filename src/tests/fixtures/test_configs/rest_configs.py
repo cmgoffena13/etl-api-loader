@@ -1,4 +1,9 @@
-from src.sources.base import APIConfig, APIEndpointConfig, OffsetPaginationConfig
+from src.sources.base import (
+    APIConfig,
+    APIEndpointConfig,
+    NextUrlPaginationConfig,
+    OffsetPaginationConfig,
+)
 from src.tests.fixtures.test_models.rest_models import TestItem
 
 TEST_REST_CONFIG_NO_PAGINATION = APIConfig(
@@ -27,6 +32,22 @@ TEST_REST_CONFIG_WITH_OFFSET_PAGINATION = APIConfig(
     ),
     endpoints={
         "items": APIEndpointConfig(
+            data_model=TestItem,
+        )
+    },
+)
+
+TEST_REST_CONFIG_WITH_NEXT_URL_PAGINATION = APIConfig(
+    name="test_api_next_url_pagination",
+    base_url="https://api.example.com/",
+    type="rest",
+    pagination_strategy="next_url",
+    pagination=NextUrlPaginationConfig(
+        next_url_key="next_url",
+    ),
+    endpoints={
+        "items": APIEndpointConfig(
+            json_entrypoint="results",
             data_model=TestItem,
         )
     },
