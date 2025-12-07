@@ -53,6 +53,7 @@ class GlobalConfig(BaseConfig):
     OPEN_TELEMETRY_FLAG: bool = False
 
     BATCH_SIZE: int = 10000
+    DATABASE_URL: Optional[str] = None
 
     # AWS Secrets Manager settings
     AWS_ACCESS_KEY_ID: Optional[str] = None
@@ -82,6 +83,7 @@ class TestConfig(GlobalConfig):
     LOG_LEVEL: str = "DEBUG"
     OTEL_PYTHON_LOG_CORRELATION: bool = False
     BATCH_SIZE: int = 100
+    DATABASE_URL: Optional[str] = "sqlite:///:memory:"
 
     model_config = SettingsConfigDict(env_prefix="TEST_")
 
