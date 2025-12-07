@@ -1,7 +1,9 @@
+import asyncio
 from typing import Optional
 from urllib.parse import urljoin
 
 import structlog
+from structlog.contextvars import bind_contextvars, clear_contextvars
 
 from src.pipeline.read.factory import ReaderFactory
 from src.pipeline.validate.validator import Validator
@@ -19,6 +21,8 @@ class PipelineRunner:
         endpoint_config: APIEndpointConfig,
         client: AsyncProductionHTTPClient,
     ):
+        clear_contextvars()
+        bind_contextvars(source=source, endpoint=endpoint)
         self.source = source
         self.endpoint = endpoint.lstrip("/")
         self.endpoint_config = endpoint_config
@@ -52,7 +56,10 @@ class PipelineRunner:
         try:
             async for batch in self.read():
                 async for validated_batch in self.validate(batch=batch):
+                    await asyncio.to_thread(self.write, validated_batch)
                     print(validated_batch)
+            await asyncio.to_thread(self.audit)
+            await asyncio.to_thread(self.publish)
             self.result = (True, self.url, None)
         except Exception as e:
             logger.exception(e)
