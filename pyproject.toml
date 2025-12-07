@@ -23,6 +23,9 @@ dependencies = [
     "typer>=0.20.0",
 ]
 
+[project.scripts]
+apiloader = "src.cli.main:main"
+
 [dependency-groups]
 dev = [
     "pre-commit>=4.5.0",
