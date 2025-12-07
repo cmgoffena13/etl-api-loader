@@ -93,7 +93,6 @@ class OffsetPaginationStrategy(BasePaginationStrategy):
                 response_data = await self._fetch_offset(
                     request=request,
                     offset=offset,
-                    endpoint_config=endpoint_config,
                 )
 
                 if not response_data:
@@ -129,7 +128,6 @@ class OffsetPaginationStrategy(BasePaginationStrategy):
                         self._fetch_offset(
                             request=request,
                             offset=current_offset,
-                            endpoint_config=endpoint_config,
                         )
                     )
 
