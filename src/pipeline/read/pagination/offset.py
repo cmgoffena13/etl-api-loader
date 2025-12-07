@@ -5,6 +5,7 @@ import httpx
 import structlog
 from httpx import Request
 
+from src.pipeline.read.json_utils import extract_items
 from src.pipeline.read.pagination.base import BasePaginationStrategy
 from src.processor.client import AsyncProductionHTTPClient
 from src.sources.base import APIConfig, APIEndpointConfig
@@ -29,13 +30,6 @@ class OffsetPaginationStrategy(BasePaginationStrategy):
         self.use_next_offset = source.pagination.use_next_offset
         self.next_offset_key = source.pagination.next_offset_key
         self.semaphore = asyncio.Semaphore(self.max_concurrent)
-
-    def _extract_items(
-        self, data: dict, endpoint_config: APIEndpointConfig
-    ) -> list[dict]:
-        if endpoint_config.json_entrypoint is not None:
-            return data[endpoint_config.json_entrypoint]
-        return data if isinstance(data, list) else [data]
 
     async def _fetch_offset(
         self,
@@ -98,7 +92,7 @@ class OffsetPaginationStrategy(BasePaginationStrategy):
                 if not response_data:
                     break
 
-                items = self._extract_items(response_data, endpoint_config)
+                items = extract_items(response_data, endpoint_config)
                 if len(items) == 0:
                     break
 
@@ -137,7 +131,7 @@ class OffsetPaginationStrategy(BasePaginationStrategy):
                 for response_data in results:
                     if not response_data:
                         continue
-                    items = self._extract_items(response_data, endpoint_config)
+                    items = extract_items(response_data, endpoint_config)
                     if len(items) > 0:
                         all_empty = False
                         yield items
@@ -151,7 +145,7 @@ class OffsetPaginationStrategy(BasePaginationStrategy):
                 has_partial_page = False
                 for response_data in results:
                     if response_data:
-                        items = self._extract_items(response_data, endpoint_config)
+                        items = extract_items(response_data, endpoint_config)
                         if len(items) > 0 and len(items) < self.limit:
                             has_partial_page = True
                             break

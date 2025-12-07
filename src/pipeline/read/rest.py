@@ -3,6 +3,7 @@ from collections.abc import AsyncGenerator
 import httpx
 
 from src.pipeline.read.base import BaseReader
+from src.pipeline.read.json_utils import extract_items
 from src.processor.client import AsyncProductionHTTPClient
 from src.sources.base import APIConfig, APIEndpointConfig
 
@@ -38,9 +39,6 @@ class RESTReader(BaseReader):
             response.raise_for_status()
 
             data = response.json()
-            if endpoint_config.json_entrypoint is not None:
-                items = data[endpoint_config.json_entrypoint]
-            else:
-                items = data if isinstance(data, list) else [data]
+            items = extract_items(data, endpoint_config)
             for batch in self._batch_items(items):
                 yield batch
