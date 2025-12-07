@@ -8,6 +8,7 @@ from typer import Option, Typer
 
 from src.logging_conf import setup_logging
 from src.processor.processor import Processor
+from src.settings import config
 
 app = Typer(help="API Loader - ETL Pipeline for APIs")
 console = Console()
@@ -22,6 +23,7 @@ def process(
         None, "--endpoint", "-e", help="API Endpoint to process Ex. products"
     ),
 ) -> None:
+    config.LOG_LEVEL = "WARNING"
     root_logger = structlog.get_logger("src")
     for handler in root_logger.handlers:
         if isinstance(handler, RichHandler):
@@ -32,7 +34,7 @@ def process(
     processor = Processor()
     if source and endpoint:
         console.print(
-            f"[green]Processing endpoint {endpoint} from source {source}...[/green]"
+            f"[green]Processing endpoint {endpoint} from API source {source}...[/green]"
         )
         asyncio.run(processor.process_endpoint(source, endpoint))
     elif source:

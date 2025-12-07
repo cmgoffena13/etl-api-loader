@@ -18,14 +18,18 @@ class Processor:
         self.client = AsyncProductionHTTPClient()
         self._closed = False
         self._thread_pool_shutdown = False
-        self.thread_pool: ThreadPoolExecutor = ThreadPoolExecutor(
-            max_workers=psutil.cpu_count(logical=False)
-        )
+        self.thread_pool = None
         self.api_queue = Queue()
         self.results: list[tuple[bool, str, Optional[str]]] = []
 
     async def process_endpoint(self, name: str, endpoint: str):
         source = MASTER_SOURCE_REGISTRY.get_source(name)
+        if endpoint not in source.endpoints:
+            available = ", ".join(source.endpoints.keys())
+            raise ValueError(
+                f"Endpoint '{endpoint}' not found in source '{name}'. "
+                f"Available endpoints: {available}"
+            )
         endpoint_config = source.endpoints[endpoint]
         runner = PipelineRunner(
             source=source,
@@ -64,6 +68,9 @@ class Processor:
         return asyncio.run(worker_loop())
 
     def process(self):
+        self.thread_pool = ThreadPoolExecutor(
+            max_workers=psutil.cpu_count(logical=False)
+        )
         for source in MASTER_SOURCE_REGISTRY.get_all_sources():
             self.api_queue.put_nowait(source)
 

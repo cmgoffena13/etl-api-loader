@@ -7,10 +7,7 @@ from src.processor.processor import Processor
 async def main():
     setup_logging()
     processor = Processor()
-    await processor.process_endpoint(
-        name="dummyjson",
-        endpoint="products",
-    )
+    await processor.process()
 
 
 if __name__ == "__main__":
