@@ -1,6 +1,6 @@
 from collections.abc import AsyncGenerator
 
-import httpx
+from httpx import Request
 
 from src.pipeline.read.base import BaseReader
 from src.pipeline.read.json_utils import extract_items
@@ -15,7 +15,7 @@ class RESTReader(BaseReader):
     async def read(
         self, url: str, endpoint_config: APIEndpointConfig
     ) -> AsyncGenerator[list[dict], None]:
-        request = httpx.Request(
+        request = Request(
             method="GET",
             url=url,
             headers=self.source.default_headers,
