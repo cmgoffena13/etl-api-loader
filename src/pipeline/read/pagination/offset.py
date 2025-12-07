@@ -148,7 +148,6 @@ class OffsetPaginationStrategy(BasePaginationStrategy):
 
                 offset += self.max_concurrent * self.limit
 
-                # Check if any page returned fewer items than the limit (indicating last page)
                 has_partial_page = False
                 for response_data in results:
                     if response_data:

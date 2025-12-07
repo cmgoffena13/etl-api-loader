@@ -34,7 +34,6 @@ class RESTReader(BaseReader):
             method="GET",
             url=url,
             headers=self.source.default_headers,
-            json=endpoint_config.body,
             params=endpoint_config.params,
         )
         if self.authentication_strategy is not None:
@@ -49,7 +48,6 @@ class RESTReader(BaseReader):
         else:
             response = await self.client.get(
                 url,
-                json=endpoint_config.body,
                 headers=dict(request.headers),
                 params=endpoint_config.params,
             )

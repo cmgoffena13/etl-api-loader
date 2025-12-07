@@ -1,6 +1,6 @@
 from typing import Any, Literal, Optional, Type
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
 class PaginationConfig(BaseModel):
@@ -16,6 +16,14 @@ class OffsetPaginationConfig(PaginationConfig):
     limit: int
     use_next_offset: bool = Field(default=False)
     next_offset_key: str = Field(default="next_offset")
+
+    @model_validator(mode="after")
+    def validate_next_offset_config(self):
+        if self.use_next_offset and not self.next_offset_key:
+            raise ValueError(
+                "next_offset_key must be provided when use_next_offset is True"
+            )
+        return self
 
 
 class APIEndpointConfig(BaseModel):
