@@ -1,4 +1,5 @@
 import asyncio
+from collections.abc import AsyncGenerator
 from typing import Optional
 from urllib.parse import urljoin
 
@@ -27,29 +28,29 @@ class PipelineRunner:
         self.endpoint = endpoint.lstrip("/")
         self.endpoint_config = endpoint_config
         base_url = source.base_url.rstrip("/") + "/"
-        self.url = urljoin(base_url, self.endpoint)
+        self.url = urljoin(base_url, self.endpoint.lstrip("/"))
         self.client = client
         self.reader = ReaderFactory.create_reader(source=source, client=client)
         self.validator = Validator(endpoint_config=endpoint_config)
         self.result: Optional[tuple[bool, str, Optional[str]]] = None
 
-    async def read(self):
+    async def read(self) -> AsyncGenerator[list[dict], None]:
         async for batch in self.reader.read(
             url=self.url, endpoint_config=self.endpoint_config
         ):
             yield batch
 
-    async def validate(self, batch: list[dict]):
+    async def validate(self, batch: list[dict]) -> AsyncGenerator[list[dict], None]:
         async for validated_batch in self.validator.validate(batch=batch):
             yield validated_batch
 
-    def write(self):
+    def write(self, batch: list[dict]) -> None:
         pass
 
-    def audit(self):
+    def audit(self) -> None:
         pass
 
-    def publish(self):
+    def publish(self) -> None:
         pass
 
     async def run(self):
