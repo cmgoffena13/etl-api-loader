@@ -1,11 +1,15 @@
 import os
 from functools import lru_cache
+from pathlib import Path
 from typing import Optional
 
+import structlog
 from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from src.utils import aws_secret_helper, azure_secret_helper, gcp_secret_helper
+
+logger = structlog.getLogger(__name__)
 
 
 class BaseConfig(BaseSettings):
@@ -138,3 +142,38 @@ def get_config(env_state: str):
 
 
 config = get_config(BaseConfig().ENV_STATE)
+
+
+def get_database_config():
+    env_state = BaseConfig().ENV_STATE
+    db_config = get_config(env_state)
+
+    # Ensure GOOGLE_APPLICATION_CREDENTIALS is set for BigQuery before create_engine
+    # This is a safety check in case get_config was called before env vars were set
+    if db_config.DRIVERNAME == "bigquery" and db_config.GOOGLE_APPLICATION_CREDENTIALS:
+        if "GOOGLE_APPLICATION_CREDENTIALS" not in os.environ:
+            credentials_path = str(db_config.GOOGLE_APPLICATION_CREDENTIALS)
+            if not os.path.isabs(credentials_path):
+                project_root = Path(__file__).parent.parent
+                credentials_path = str(project_root / credentials_path)
+            credentials_path = str(Path(credentials_path).resolve())
+            os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = credentials_path
+            logger.debug(
+                f"Set GOOGLE_APPLICATION_CREDENTIALS in get_database_config to: {credentials_path}"
+            )
+
+    config_dict = {
+        "sqlalchemy.url": db_config.DATABASE_URL,
+        "sqlalchemy.echo": False,
+        "sqlalchemy.future": True,
+    }
+
+    if db_config.DRIVERNAME == "sqlite":
+        config_dict["sqlalchemy.connect_args"] = {"check_same_thread": False}
+        config_dict["sqlalchemy.pool_size"] = 1
+    else:
+        config_dict["sqlalchemy.pool_size"] = 20
+        config_dict["sqlalchemy.max_overflow"] = 10
+        config_dict["sqlalchemy.pool_timeout"] = 30
+
+    return config_dict
