@@ -30,12 +30,18 @@ class OffsetPaginationStrategy(BasePaginationStrategy):
         self.next_offset_key = source.pagination.next_offset_key
         self.semaphore = asyncio.Semaphore(self.max_concurrent)
 
+    def _extract_items(
+        self, data: dict, endpoint_config: APIEndpointConfig
+    ) -> list[dict]:
+        if endpoint_config.json_entrypoint is not None:
+            return data[endpoint_config.json_entrypoint]
+        return data if isinstance(data, list) else [data]
+
     async def _fetch_offset(
         self,
         request: Request,
         offset: int,
-        endpoint_config: APIEndpointConfig,
-    ) -> tuple[list[dict], dict]:
+    ) -> dict:
         async with self.semaphore:
             params = dict(request.url.params)
             params[self.offset_param] = offset
@@ -71,17 +77,10 @@ class OffsetPaginationStrategy(BasePaginationStrategy):
                         if e.response.text
                         else None,
                     )
-                    return [], {}
+                    return {}
                 raise
 
-            data = response.json()
-
-            if endpoint_config.json_entrypoint is not None:
-                items = data[endpoint_config.json_entrypoint]
-            else:
-                items = data if isinstance(data, list) else [data]
-
-            return items, data
+            return response.json()
 
     async def pages(
         self,
@@ -91,12 +90,16 @@ class OffsetPaginationStrategy(BasePaginationStrategy):
         if self.use_next_offset:
             offset = self.start_offset
             while True:
-                items, response_data = await self._fetch_offset(
+                response_data = await self._fetch_offset(
                     request=request,
                     offset=offset,
                     endpoint_config=endpoint_config,
                 )
 
+                if not response_data:
+                    break
+
+                items = self._extract_items(response_data, endpoint_config)
                 if len(items) == 0:
                     break
 
@@ -133,7 +136,10 @@ class OffsetPaginationStrategy(BasePaginationStrategy):
                 results = await asyncio.gather(*tasks)
 
                 all_empty = True
-                for items, _ in results:
+                for response_data in results:
+                    if not response_data:
+                        continue
+                    items = self._extract_items(response_data, endpoint_config)
                     if len(items) > 0:
                         all_empty = False
                         yield items
@@ -144,7 +150,13 @@ class OffsetPaginationStrategy(BasePaginationStrategy):
 
                 offset += self.max_concurrent * self.limit
 
-                if any(
-                    len(items) < self.limit for items, _ in results if len(items) > 0
-                ):
+                # Check if any page returned fewer items than the limit (indicating last page)
+                has_partial_page = False
+                for response_data in results:
+                    if response_data:
+                        items = self._extract_items(response_data, endpoint_config)
+                        if len(items) > 0 and len(items) < self.limit:
+                            has_partial_page = True
+                            break
+                if has_partial_page:
                     break
