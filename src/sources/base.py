@@ -14,6 +14,8 @@ class OffsetPaginationConfig(PaginationConfig):
     max_concurrent: int = Field(default=5)
     offset: int
     limit: int
+    use_next_offset: bool = Field(default=False)
+    next_offset_key: str = Field(default="next_offset")
 
 
 class APIEndpointConfig(BaseModel):
