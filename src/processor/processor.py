@@ -1,3 +1,6 @@
+from concurrent.futures import ThreadPoolExecutor
+
+import psutil
 import structlog
 
 from src.enum import HttpMethod
@@ -12,14 +15,28 @@ class Processor:
     def __init__(self):
         self.client = AsyncProductionHTTPClient()
         self._closed = False
+        self.thread_pool: ThreadPoolExecutor = ThreadPoolExecutor(
+            max_workers=psutil.cpu_count(logical=False)
+        )
 
-    async def process(self, base_url: str, endpoint: str, method: HttpMethod):
+    async def process_endpoint(self, base_url: str, endpoint: str, method: HttpMethod):
         source = MASTER_SOURCE_REGISTRY.get_source(base_url, endpoint, method)
         runner = PipelineRunner(
             endpoint=endpoint, method=method, config=source, client=self.client
         )
         await runner.run()
         await self.close()
+
+    async def process_api(self, base_url: str):
+        source = MASTER_SOURCE_REGISTRY.get_source(base_url)
+        # Process Sequentially to respect API
+        for endpoint in source.endpoints:
+            runner = PipelineRunner(
+                endpoint=endpoint.endpoint,
+                config=source,
+                client=self.client,
+            )
+            await runner.run()
 
     async def close(self):
         if not self._closed:

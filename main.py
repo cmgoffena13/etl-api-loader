@@ -7,7 +7,7 @@ from src.processor.processor import Processor
 async def main():
     setup_logging()
     processor = Processor()
-    await processor.process(
+    await processor.process_endpoint(
         base_url="https://dummyjson.com",
         endpoint="/products",
         method="GET",
