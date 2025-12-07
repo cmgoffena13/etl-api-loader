@@ -1,3 +1,5 @@
+.PHONY: format lint test install setup upgrade run
+
 format: lint
 	uv run -- ruff format
 
