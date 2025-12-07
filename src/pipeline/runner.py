@@ -1,9 +1,11 @@
+from urllib.parse import urljoin
+
 import structlog
 
 from src.pipeline.read.factory import ReaderFactory
 from src.pipeline.validate.validator import Validator
 from src.processor.client import AsyncProductionHTTPClient
-from src.sources.base import APIConfig
+from src.sources.base import APIConfig, APIEndpointConfig
 
 logger = structlog.getLogger(__name__)
 
@@ -12,14 +14,17 @@ class PipelineRunner:
     def __init__(
         self,
         endpoint: str,
+        endpoint_config: APIEndpointConfig,
         config: APIConfig,
         client: AsyncProductionHTTPClient,
     ):
         self.config = config
-        self.endpoint = endpoint
+        self.endpoint = endpoint.lstrip("/")
+        base_url = config.base_url.rstrip("/") + "/"
+        self.url = urljoin(base_url, self.endpoint)
         self.client = client
         self.reader = ReaderFactory.create_reader(source=config, client=client)
-        endpoint_config = next(ep for ep in config.endpoints if ep.endpoint == endpoint)
+        endpoint_config = config.endpoints[self.endpoint]
         self.validator = Validator(endpoint_config=endpoint_config)
 
     async def read(self):

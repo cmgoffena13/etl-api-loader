@@ -27,7 +27,6 @@ class OffsetPaginationConfig(PaginationConfig):
 
 
 class APIEndpointConfig(BaseModel):
-    endpoint: str
     json_entrypoint: Optional[str] = None
     body: Optional[dict[str, Any]] = None
     params: dict[str, Any] = Field(default_factory=dict)
@@ -39,11 +38,20 @@ class APIEndpointConfig(BaseModel):
 
 
 class APIConfig(BaseModel):
+    name: str
     base_url: str
     type: Literal["rest", "graphql"]
     pagination_strategy: Optional[Literal["offset"]] = None
+    pagination: Optional[PaginationConfig] = None
     authentication_strategy: Optional[Literal["auth", "bearer"]] = None
     default_headers: dict[str, str] = Field(default_factory=dict)
-    pagination: Optional[PaginationConfig] = None
-    endpoints: list[APIEndpointConfig] = Field(default_factory=list)
+    endpoints: dict[str, APIEndpointConfig] = Field(default_factory=dict)
     nested_relations: dict[str, list[str]] = Field(default_factory=dict)
+
+    @model_validator(mode="after")
+    def validate_pagination_config(self):
+        if self.pagination_strategy is not None and self.pagination is None:
+            raise ValueError(
+                "pagination must be provided when pagination_strategy is set"
+            )
+        return self

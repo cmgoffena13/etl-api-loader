@@ -26,10 +26,9 @@ class RESTReader(BaseReader):
             yield batch[:batch_index]
 
     async def read(self, endpoint: str) -> AsyncGenerator[list[dict], None]:
-        endpoint_config = next(
-            ep for ep in self.source.endpoints if ep.endpoint == endpoint
-        )
-        url = f"{self.source.base_url}{endpoint_config.endpoint}"
+        endpoint_config = self.source.endpoints[endpoint]
+        base_url = self.source.base_url.rstrip("/") + "/"
+        url = f"{base_url}{endpoint}"
         request = httpx.Request(
             method="GET",
             url=url,

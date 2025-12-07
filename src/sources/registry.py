@@ -22,10 +22,8 @@ class SourceRegistry(BaseModel):
                 if endpoint is None:
                     sources.append(source)
                 else:
-                    for ep in source.endpoints:
-                        if ep.endpoint == endpoint:
-                            sources.append(source)
-                            break
+                    if endpoint in source.endpoints:
+                        sources.append(source)
         if len(sources) == 0:
             raise ValueError(
                 f"Source not found for base_url: {base_url}, endpoint: {endpoint}"

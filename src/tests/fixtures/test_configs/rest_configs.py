@@ -2,17 +2,18 @@ from src.sources.base import APIConfig, APIEndpointConfig, OffsetPaginationConfi
 from src.tests.fixtures.test_models.rest_models import TestItem
 
 TEST_REST_CONFIG_NO_PAGINATION = APIConfig(
-    base_url="https://api.example.com",
+    name="test_api_no_pagination",
+    base_url="https://api.example.com/",
     type="rest",
-    endpoints=[
-        APIEndpointConfig(
-            endpoint="/items",
+    endpoints={
+        "items": APIEndpointConfig(
             data_model=TestItem,
         )
-    ],
+    },
 )
 
 TEST_REST_CONFIG_WITH_OFFSET_PAGINATION = APIConfig(
+    name="test_api_offset_pagination",
     base_url="https://api.example.com",
     type="rest",
     pagination_strategy="offset",
@@ -24,10 +25,9 @@ TEST_REST_CONFIG_WITH_OFFSET_PAGINATION = APIConfig(
         offset=0,
         limit=5,
     ),
-    endpoints=[
-        APIEndpointConfig(
-            endpoint="/items",
+    endpoints={
+        "items": APIEndpointConfig(
             data_model=TestItem,
         )
-    ],
+    },
 )

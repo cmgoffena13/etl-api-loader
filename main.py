@@ -8,8 +8,8 @@ async def main():
     setup_logging()
     processor = Processor()
     await processor.process_endpoint(
-        base_url="https://dummyjson.com",
-        endpoint="/products",
+        base_url="https://dummyjson.com/",
+        endpoint="products",
     )
 
 

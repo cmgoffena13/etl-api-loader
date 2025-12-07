@@ -2,7 +2,8 @@ from src.sources.base import APIConfig, APIEndpointConfig, OffsetPaginationConfi
 from src.sources.dummyjson.models.products import DummyJSONProduct
 
 DUMMYJSON_CONFIG = APIConfig(
-    base_url="https://dummyjson.com",
+    name="dummyjson",
+    base_url="https://dummyjson.com/",
     type="rest",
     pagination_strategy="offset",
     pagination=OffsetPaginationConfig(
@@ -13,11 +14,10 @@ DUMMYJSON_CONFIG = APIConfig(
         offset=0,
         limit=10,
     ),
-    endpoints=[
-        APIEndpointConfig(
-            endpoint="/products",
+    endpoints={
+        "products": APIEndpointConfig(
             json_entrypoint="products",
             data_model=DummyJSONProduct,
         )
-    ],
+    },
 )

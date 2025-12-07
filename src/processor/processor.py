@@ -27,9 +27,9 @@ class Processor:
     async def process_api(self, base_url: str):
         source = MASTER_SOURCE_REGISTRY.get_source(base_url)
         # Process Sequentially to respect API rate-limits
-        for endpoint in source.endpoints:
+        for endpoint, endpoint_config in source.endpoints.items():
             runner = PipelineRunner(
-                endpoint=endpoint.endpoint,
+                endpoint=endpoint,
                 config=source,
                 client=self.client,
             )
