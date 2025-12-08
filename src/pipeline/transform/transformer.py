@@ -106,16 +106,10 @@ class Transformer:
 
     async def _extract_related_record(
         self,
-        nested_item: dict[str, Any] | str,
+        nested_item: dict[str, Any],
         parent_id: Any,
         relationship: TableRelationship,
     ) -> dict[str, Any]:
-        if isinstance(nested_item, str):
-            return {
-                relationship.foreign_key_name: parent_id,
-                "url": nested_item,
-            }
-
         record = dict(nested_item)
         record[relationship.foreign_key_name] = parent_id
         return record
