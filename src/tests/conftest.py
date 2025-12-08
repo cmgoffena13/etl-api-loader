@@ -60,7 +60,7 @@ def mock_rest_offset_pagination_responses(httpx_mock: HTTPXMock):
     httpx_mock.add_response(
         method="GET",
         url="https://api.example.com/items?offset=15&limit=5",
-        json=[],
+        json={"items": []},
     )
     yield httpx_mock
 

@@ -1,5 +1,10 @@
 from src.settings import config
-from src.sources.base import APIConfig, APIEndpointConfig, NextUrlPaginationConfig
+from src.sources.base import (
+    APIConfig,
+    APIEndpointConfig,
+    NextUrlPaginationConfig,
+    TableConfig,
+)
 from src.sources.polygon.models.tickers import PolygonTicker
 
 POLYGON_CONFIG = APIConfig(
@@ -15,8 +20,15 @@ POLYGON_CONFIG = APIConfig(
     endpoints={
         "tickers": APIEndpointConfig(
             json_entrypoint="results",
-            data_model=PolygonTicker,
             backoff_starting_delay=60,
+            tables=[
+                TableConfig(
+                    json_entrypoint="results",
+                    data_model=PolygonTicker,
+                    stage_table_name="stage_tickers",
+                    target_table_name="tickers",
+                )
+            ],
         )
     },
 )

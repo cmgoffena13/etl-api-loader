@@ -30,14 +30,25 @@ class NextUrlPaginationConfig(PaginationConfig):
     next_url_key: str = Field(default="next_url")
 
 
+class TableRelationship(BaseModel):
+    parent_id_field: str
+    foreign_key_name: str
+
+
+class TableConfig(BaseModel):
+    data_model: Type[BaseModel]
+    stage_table_name: str
+    target_table_name: str
+    json_entrypoint: Optional[str] = None
+    relationship: Optional[TableRelationship] = None
+
+
 class APIEndpointConfig(BaseModel):
     json_entrypoint: Optional[str] = None
     body: Optional[dict[str, Any]] = None
     default_params: dict[str, Any] = Field(default_factory=dict)
     backoff_starting_delay: float = Field(default=1)
-    data_model: Type[BaseModel]
-    nested: list["APIEndpointConfig"] = Field(default_factory=list)
-    extract_id: str = Field(default="id")
+    tables: list[TableConfig]
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -52,7 +63,6 @@ class APIConfig(BaseModel):
     authentication_params: dict[str, Any] = Field(default_factory=dict)
     default_headers: dict[str, str] = Field(default_factory=dict)
     endpoints: dict[str, APIEndpointConfig] = Field(default_factory=dict)
-    nested_relations: dict[str, list[str]] = Field(default_factory=dict)
 
     @model_validator(mode="after")
     def validate_pagination_config(self):

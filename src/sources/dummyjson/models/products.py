@@ -42,7 +42,6 @@ class DummyJSONProduct(BaseModel):
     warrantyInformation: str
     shippingInformation: str
     availabilityStatus: str
-    reviews: list[Review]
     returnPolicy: str
     minimumOrderQuantity: int
     meta: Meta

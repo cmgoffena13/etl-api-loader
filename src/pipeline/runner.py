@@ -7,6 +7,7 @@ import structlog
 from structlog.contextvars import bind_contextvars, clear_contextvars
 
 from src.pipeline.read.factory import ReaderFactory
+from src.pipeline.transform.transformer import TableBatch, Transformer
 from src.pipeline.validate.validator import Validator
 from src.processor.client import AsyncProductionHTTPClient
 from src.sources.base import APIConfig, APIEndpointConfig
@@ -32,6 +33,7 @@ class PipelineRunner:
         self.client = client
         self.reader = ReaderFactory.create_reader(source=source, client=client)
         self.validator = Validator(endpoint_config=endpoint_config)
+        self.transformer = Transformer(endpoint_config=endpoint_config)
         self.result: Optional[tuple[bool, str, Optional[str]]] = None
 
     async def read(self) -> AsyncGenerator[list[dict], None]:
@@ -44,7 +46,13 @@ class PipelineRunner:
         async for validated_batch in self.validator.validate(batch=batch):
             yield validated_batch
 
-    def write(self, batch: list[dict]) -> None:
+    async def transform(
+        self, batch: list[dict]
+    ) -> AsyncGenerator[list[TableBatch], None]:
+        async for table_batches in self.transformer.transform(batch):
+            yield table_batches
+
+    def write(self, table_batches: list[TableBatch]) -> None:
         pass
 
     def audit(self) -> None:
@@ -56,9 +64,10 @@ class PipelineRunner:
     async def run(self):
         try:
             async for batch in self.read():
+                print(batch)
                 async for validated_batch in self.validate(batch=batch):
-                    await asyncio.to_thread(self.write, validated_batch)
-                    print(validated_batch)
+                    async for table_batches in self.transform(validated_batch):
+                        await asyncio.to_thread(self.write, table_batches)
             await asyncio.to_thread(self.audit)
             await asyncio.to_thread(self.publish)
             self.result = (True, self.url, None)

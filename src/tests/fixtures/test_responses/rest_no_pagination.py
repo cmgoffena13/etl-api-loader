@@ -1,5 +1,7 @@
-TEST_SINGLE_REQUEST_RESPONSE = [
-    {"id": 1, "name": "Item 1"},
-    {"id": 2, "name": "Item 2"},
-    {"id": 3, "name": "Item 3"},
-]
+TEST_SINGLE_REQUEST_RESPONSE = {
+    "items": [
+        {"id": 1, "name": "Item 1"},
+        {"id": 2, "name": "Item 2"},
+        {"id": 3, "name": "Item 3"},
+    ]
+}

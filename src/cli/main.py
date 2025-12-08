@@ -32,20 +32,27 @@ def process(
             handler.show_path = False
 
     processor = Processor()
-    try:
-        if source and endpoint:
-            console.print(
-                f"[green]Processing endpoint {endpoint} from API source {source}...[/green]"
-            )
-            asyncio.run(processor.process_endpoint(source, endpoint))
-        elif source:
-            console.print(f"[green]Processing API {source}...[/green]")
-            asyncio.run(processor.process_api(source))
-        else:
-            console.print("[green]Processing all APIs...[/green]")
-            processor.process()
-    finally:
-        asyncio.run(processor.close())
+    if source and endpoint:
+        console.print(
+            f"[green]Processing endpoint {endpoint} from API source {source}...[/green]"
+        )
+
+        async def run():
+            await processor.process_endpoint(source, endpoint)
+            await processor.close()
+
+        asyncio.run(run())
+    elif source:
+        console.print(f"[green]Processing API {source}...[/green]")
+
+        async def run():
+            await processor.process_api(source)
+            await processor.close()
+
+        asyncio.run(run())
+    else:
+        console.print("[green]Processing all APIs...[/green]")
+        processor.process()
 
 
 def main() -> None:

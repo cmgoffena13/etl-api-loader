@@ -184,9 +184,7 @@ class AsyncProductionHTTPClient:
             "GET", url, backoff_starting_delay, **kwargs
         )
 
-    async def post(
-        self, url: str, backoff_starting_delay: float = 1, **kwargs
-    ) -> httpx.Response:
+    async def post(self, url: str, **kwargs) -> httpx.Response:
         """POST request without retry logic (POST is not idempotent)."""
         return await self.client.request("POST", url, **kwargs)
 
