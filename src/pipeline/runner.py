@@ -42,15 +42,19 @@ class PipelineRunner:
         ):
             yield batch
 
-    async def validate(self, batch: list[dict]) -> AsyncGenerator[list[dict], None]:
-        async for validated_batch in self.validator.validate(batch=batch):
-            yield validated_batch
-
     async def transform(
         self, batch: list[dict]
     ) -> AsyncGenerator[list[TableBatch], None]:
-        async for table_batches in self.transformer.transform(batch):
+        async for table_batches in self.transformer.transform(batch=batch):
             yield table_batches
+
+    async def validate(
+        self, table_batches: list[TableBatch]
+    ) -> AsyncGenerator[list[dict], None]:
+        async for validated_table_batches in self.validator.validate(
+            table_batches=table_batches
+        ):
+            yield validated_table_batches
 
     def write(self, table_batches: list[TableBatch]) -> None:
         pass
@@ -64,10 +68,12 @@ class PipelineRunner:
     async def run(self):
         try:
             async for batch in self.read():
-                print(batch)
-                async for validated_batch in self.validate(batch=batch):
-                    async for table_batches in self.transform(validated_batch):
-                        await asyncio.to_thread(self.write, table_batches)
+                print(batch[0])
+                async for table_batches in self.transform(batch=batch):
+                    async for validated_table_batches in self.validate(
+                        table_batches=table_batches
+                    ):
+                        await asyncio.to_thread(self.write, validated_table_batches)
             await asyncio.to_thread(self.audit)
             await asyncio.to_thread(self.publish)
             self.result = (True, self.url, None)

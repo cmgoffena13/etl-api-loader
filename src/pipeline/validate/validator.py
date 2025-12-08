@@ -3,7 +3,7 @@ from collections.abc import AsyncGenerator
 import structlog
 from pydantic import TypeAdapter, ValidationError
 
-from src.settings import config
+from src.pipeline.transform.transformer import TableBatch
 from src.sources.base import APIEndpointConfig
 
 logger = structlog.getLogger(__name__)
@@ -14,23 +14,29 @@ class Validator:
         self.endpoint_config = endpoint_config
         if not endpoint_config.tables:
             raise ValueError("At least one table config is required")
-        self.adapter = TypeAdapter(endpoint_config.tables[0].data_model)
-        self.batch_size = config.BATCH_SIZE
+        self.adapters: dict[str, TypeAdapter] = {}
+        self.stage_to_target: dict[str, str] = {}
 
-    async def validate(self, batch: list[dict]) -> AsyncGenerator[list[dict], None]:
-        validated_batch = [None] * self.batch_size
-        batch_index = 0
-        for record in batch:
-            try:
-                validated_record = self.adapter.validate_python(record).model_dump()
-                validated_batch[batch_index] = validated_record
-                batch_index += 1
-            except ValidationError as e:
-                raise e
+        for table_config in endpoint_config.tables:
+            self.adapters[table_config.target_table_name] = TypeAdapter(
+                table_config.data_model
+            )
+            self.stage_to_target[table_config.stage_table_name] = (
+                table_config.target_table_name
+            )
 
-            if batch_index == self.batch_size:
-                yield validated_batch
-                validated_batch[:] = [None] * self.batch_size
-                batch_index = 0
-        if batch_index > 0:
-            yield validated_batch[:batch_index]
+    async def validate(
+        self, table_batches: list[TableBatch]
+    ) -> AsyncGenerator[list[TableBatch], None]:
+        for table_batch in table_batches:
+            target_table_name = self.stage_to_target[table_batch.stage_table_name]
+            adapter = self.adapters[target_table_name]
+
+            for index, record in enumerate(table_batch.records):
+                try:
+                    validated_record = adapter.validate_python(record).model_dump()
+                    table_batch.records[index] = validated_record
+                except ValidationError as e:
+                    raise e
+
+        yield table_batches

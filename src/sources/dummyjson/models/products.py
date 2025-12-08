@@ -4,25 +4,12 @@ from pydantic import BaseModel
 from pydantic_extra_types.pendulum_dt import DateTime
 
 
-class Dimensions(BaseModel):
-    width: float
-    height: float
-    depth: float
-
-
 class Review(BaseModel):
     rating: int
     comment: str
     date: DateTime
     reviewerName: str
     reviewerEmail: str
-
-
-class Meta(BaseModel):
-    createdAt: DateTime
-    updatedAt: DateTime
-    barcode: str
-    qrCode: str
 
 
 class DummyJSONProduct(BaseModel):
@@ -38,12 +25,21 @@ class DummyJSONProduct(BaseModel):
     brand: Optional[str] = None
     sku: str
     weight: int
-    dimensions: Dimensions
+    # Flattened fields
+    dimensions_width: float
+    dimensions_height: float
+    dimensions_depth: float
+
     warrantyInformation: str
     shippingInformation: str
     availabilityStatus: str
     returnPolicy: str
     minimumOrderQuantity: int
-    meta: Meta
+    # Flattened fields
+    meta_createdAt: DateTime
+    meta_updatedAt: DateTime
+    meta_barcode: str
+    meta_qrCode: str
+
     images: list[str]
     thumbnail: str
