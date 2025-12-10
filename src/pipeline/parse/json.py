@@ -1,5 +1,5 @@
 import re
-from typing import Any
+from typing import Any, AsyncGenerator
 
 from pydantic import TypeAdapter, ValidationError
 
@@ -188,12 +188,13 @@ class JSONParser(BaseParser):
                 if isinstance(item, (dict, list)):
                     await self._parsing_walk(item, item_path)
 
-    async def parse_batch(self, json_objs: list[dict]):
+    async def parse(self, batch: list[dict]) -> AsyncGenerator[list[TableBatch], None]:
+        await self._initialize()
         for table_batch in self.table_batches.values():
             table_batch.clear_records()
-        for json_obj in json_objs:
-            await self.clear_index_cache()
-            await self._parsing_walk(json_obj)
+        await self.clear_index_cache()
+        for record in batch:
+            await self._parsing_walk(record)
         if self.errors:
             raise ValueError(self.errors)
-        return list(self.table_batches.values())
+        yield list(self.table_batches.values())
