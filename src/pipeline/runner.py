@@ -32,7 +32,7 @@ class PipelineRunner:
         self.client = client
         self.reader = ReaderFactory.create_reader(source=source, client=client)
         self.parser = ParserFactory.create_parser(
-            parser_type="json", endpoint_config=endpoint_config
+            source=source, endpoint_config=endpoint_config
         )
         self.result: Optional[tuple[bool, str, Optional[str]]] = None
 

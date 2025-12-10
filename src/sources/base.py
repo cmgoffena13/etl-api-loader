@@ -87,6 +87,7 @@ class APIConfig(BaseModel):
     authentication_params: dict[str, Any] = Field(default_factory=dict)
     default_headers: dict[str, str] = Field(default_factory=dict)
     endpoints: dict[str, APIEndpointConfig] = Field(default_factory=dict)
+    parse_type: Literal["json"] = Field(default="json")
 
     @model_validator(mode="after")
     def validate_pagination_config(self):

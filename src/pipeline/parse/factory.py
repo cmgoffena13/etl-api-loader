@@ -1,6 +1,6 @@
 from src.pipeline.parse.base import BaseParser
 from src.pipeline.parse.json import JSONParser
-from src.sources.base import APIEndpointConfig
+from src.sources.base import APIConfig, APIEndpointConfig
 
 
 class ParserFactory:
@@ -14,12 +14,12 @@ class ParserFactory:
 
     @classmethod
     def create_parser(
-        cls, parser_type: str, endpoint_config: APIEndpointConfig
+        cls, source: APIConfig, endpoint_config: APIEndpointConfig
     ) -> BaseParser:
         try:
-            parser_class = cls._parsers[parser_type]
+            parser_class = cls._parsers[source.parse_type]
             return parser_class(endpoint_config=endpoint_config)
         except KeyError:
             raise ValueError(
-                f"Unsupported parser type: {parser_type}. Supported types: {cls.get_supported_parsers()}"
+                f"Unsupported parser type: {source.parse_type}. Supported types: {cls.get_supported_parsers()}"
             )
