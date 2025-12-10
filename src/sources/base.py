@@ -8,11 +8,22 @@ class TableBatch:
         self,
         stage_table_name: str,
         data_model: Type[BaseModel],
-        records: list[dict[str, Any]],
+        json_path_pattern: str,
     ):
         self.stage_table_name = stage_table_name
         self.data_model = data_model
-        self.records = records
+        self._records = []
+        self.json_path_pattern = json_path_pattern
+
+    def add_record(self, record: dict):
+        self._records.append(record)
+
+    def clear_records(self):
+        self._records = []
+
+    @property
+    def records(self):
+        return self._records
 
 
 class PaginationConfig(BaseModel):

@@ -43,8 +43,8 @@ class PipelineRunner:
             yield batch
 
     async def parse(self, batch: list[dict]) -> AsyncGenerator[list[TableBatch], None]:
-        async for parsed_batch in self.parser.parse(batch=batch):
-            yield parsed_batch
+        async for table_batches in self.parser.parse(batch=batch):
+            yield table_batches
 
     def write(self, table_batches: list[TableBatch]) -> None:
         pass

@@ -1,31 +1,17 @@
 import re
-from collections import defaultdict
-from dataclasses import dataclass
-from typing import Any, Type
+from typing import Any
 
-from pydantic import BaseModel, TypeAdapter, ValidationError
+from pydantic import TypeAdapter, ValidationError
 
 from src.pipeline.parse.base import BaseParser
-from src.sources.base import APIEndpointConfig
-
-
-@dataclass
-class ModelSpec(BaseModel):
-    data_model: Type[BaseModel]
-    json_path_pattern: str
+from src.sources.base import APIEndpointConfig, TableBatch
 
 
 class JSONParser(BaseParser):
     def __init__(self, endpoint_config: APIEndpointConfig):
         super().__init__(endpoint_config)
-        self.data_models = [
-            model
-            for data_model in endpoint_config.tables
-            for model in data_model.data_model
-        ]
-        self.model_specs = {}
-        self.model_adapters = {}
-        self.results = defaultdict(list)
+        self.table_batches: dict[str, TableBatch] = {}
+        self.model_adapters: dict[str, TypeAdapter] = {}
         self.errors = []
         self.indexed_cache = {}
         self.regex_pattern_cache = {}
@@ -35,14 +21,11 @@ class JSONParser(BaseParser):
 
     async def _initialize(self) -> None:
         if not self._initialized:
-            await self._model_specs_create_specs_and_adapters(self.data_models)
+            await self._create_table_batches_and_adapters()
             self._initialized = True
 
     async def clear_index_cache(self):
         self.indexed_cache = {}
-
-    async def clear_batch_results(self):
-        self.results = defaultdict(list)
 
     async def _model_specs_find_deepest_common_path_pattern(
         self, aliases: list[str]
@@ -69,10 +52,9 @@ class JSONParser(BaseParser):
 
         return ".".join(common_segments) if common_segments else "root"
 
-    async def _model_specs_create_specs_and_adapters(
-        self, data_models: list[Type[BaseModel]]
-    ) -> None:
-        for model_cls in data_models:
+    async def _create_table_batches_and_adapters(self) -> None:
+        for table_config in self.endpoint_config.tables:
+            model_cls = table_config.data_model
             all_aliases = []
             fields = []
 
@@ -102,12 +84,13 @@ class JSONParser(BaseParser):
                     )
                 )
 
-            spec = ModelSpec(
+            table_batch = TableBatch(
+                stage_table_name=table_config.stage_table_name,
                 data_model=model_cls,
                 json_path_pattern=json_path_pattern,
             )
 
-            self.model_specs[model_name] = spec
+            self.table_batches[model_name] = table_batch
             self.model_adapters[model_name] = TypeAdapter(model_cls)
 
     async def _model_specs_find_deepest_wildcard_path(self, aliases: list[str]) -> str:
@@ -155,9 +138,11 @@ class JSONParser(BaseParser):
 
         return ".".join(resolved_segments)
 
-    async def _parsing_build_model_data(self, path: str, spec: ModelSpec) -> dict:
+    async def _parsing_build_model_data(
+        self, path: str, table_batch: TableBatch
+    ) -> dict:
         data = {}
-        model_name = spec.data_model.__name__
+        model_name = table_batch.data_model.__name__
         for field_name, alias, has_wildcard in self.model_fields_cache[model_name]:
             if has_wildcard:
                 resolved_alias = await self._parsing_replace_wildcard_with_index(
@@ -169,14 +154,12 @@ class JSONParser(BaseParser):
         return data
 
     async def _parsing_extract_models_at_path(self, path: str) -> None:
-        for model_name, spec in self.model_specs.items():
-            if await self._parsing_path_matches(path, spec.json_path_pattern):
+        for model_name, table_batch in self.table_batches.items():
+            if await self._parsing_path_matches(path, table_batch.json_path_pattern):
                 try:
-                    data = await self._parsing_build_model_data(path, spec)
+                    data = await self._parsing_build_model_data(path, table_batch)
                     adapter = self.model_adapters[model_name]
-                    self.results[model_name].append(
-                        adapter.validate_python(data).model_dump()
-                    )
+                    table_batch.add_record(adapter.validate_python(data).model_dump())
                 except ValidationError as e:
                     self.errors.append(
                         {
@@ -205,19 +188,12 @@ class JSONParser(BaseParser):
                 if isinstance(item, (dict, list)):
                     await self._parsing_walk(item, item_path)
 
-    async def parse(self, json_obj: dict):
-        await self._initialize()
-        await self.clear_index_cache()
-        self.results = {model_name: [] for model_name in self.model_specs.keys()}
-        await self._parsing_walk(json_obj)
+    async def parse_batch(self, json_objs: list[dict]):
+        for table_batch in self.table_batches.values():
+            table_batch.clear_records()
+        for json_obj in json_objs:
+            await self.clear_index_cache()
+            await self._parsing_walk(json_obj)
         if self.errors:
             raise ValueError(self.errors)
-        return self.results
-
-    async def parse_batch(self, json_objs: list[dict]):
-        await self._initialize()
-        await self.clear_batch_results()
-        self.results = {model_name: [] for model_name in self.model_specs.keys()}
-        for json_obj in json_objs:
-            await self._parsing_walk(json_obj)
-        return self.results
+        return list(self.table_batches.values())
