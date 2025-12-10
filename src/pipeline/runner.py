@@ -6,11 +6,10 @@ from urllib.parse import urljoin
 import structlog
 from structlog.contextvars import bind_contextvars, clear_contextvars
 
+from src.pipeline.parse.factory import ParserFactory
 from src.pipeline.read.factory import ReaderFactory
-from src.pipeline.transform.transformer import TableBatch, Transformer
-from src.pipeline.validate.validator import Validator
 from src.processor.client import AsyncProductionHTTPClient
-from src.sources.base import APIConfig, APIEndpointConfig
+from src.sources.base import APIConfig, APIEndpointConfig, TableBatch
 
 logger = structlog.getLogger(__name__)
 
@@ -32,8 +31,9 @@ class PipelineRunner:
         self.url = urljoin(base_url, self.endpoint.lstrip("/"))
         self.client = client
         self.reader = ReaderFactory.create_reader(source=source, client=client)
-        self.validator = Validator(endpoint_config=endpoint_config)
-        self.transformer = Transformer(endpoint_config=endpoint_config)
+        self.parser = ParserFactory.create_parser(
+            parser_type="json", endpoint_config=endpoint_config
+        )
         self.result: Optional[tuple[bool, str, Optional[str]]] = None
 
     async def read(self) -> AsyncGenerator[list[dict], None]:
@@ -42,19 +42,9 @@ class PipelineRunner:
         ):
             yield batch
 
-    async def transform(
-        self, batch: list[dict]
-    ) -> AsyncGenerator[list[TableBatch], None]:
-        async for table_batches in self.transformer.transform(batch=batch):
-            yield table_batches
-
-    async def validate(
-        self, table_batches: list[TableBatch]
-    ) -> AsyncGenerator[list[dict], None]:
-        async for validated_table_batches in self.validator.validate(
-            table_batches=table_batches
-        ):
-            yield validated_table_batches
+    async def parse(self, batch: list[dict]) -> AsyncGenerator[list[TableBatch], None]:
+        async for parsed_batch in self.parser.parse(batch=batch):
+            yield parsed_batch
 
     def write(self, table_batches: list[TableBatch]) -> None:
         pass
@@ -69,11 +59,8 @@ class PipelineRunner:
         try:
             async for batch in self.read():
                 print(batch[0])
-                async for table_batches in self.transform(batch=batch):
-                    async for validated_table_batches in self.validate(
-                        table_batches=table_batches
-                    ):
-                        await asyncio.to_thread(self.write, validated_table_batches)
+                async for table_batches in self.parse(batch=batch):
+                    await asyncio.to_thread(self.write, table_batches)
             await asyncio.to_thread(self.audit)
             await asyncio.to_thread(self.publish)
             self.result = (True, self.url, None)

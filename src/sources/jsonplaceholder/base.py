@@ -13,6 +13,7 @@ JSONPLACEHOLDER_CONFIG = APIConfig(
                     data_model=JSONPlaceholderPost,
                     stage_table_name="stage_posts",
                     target_table_name="posts",
+                    primary_keys=["id"],
                 )
             ],
         )

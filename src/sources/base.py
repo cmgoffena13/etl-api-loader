@@ -3,6 +3,18 @@ from typing import Any, Literal, Optional, Type
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
+class TableBatch:
+    def __init__(
+        self,
+        stage_table_name: str,
+        data_model: Type[BaseModel],
+        records: list[dict[str, Any]],
+    ):
+        self.stage_table_name = stage_table_name
+        self.data_model = data_model
+        self.records = records
+
+
 class PaginationConfig(BaseModel):
     pass
 
@@ -41,6 +53,18 @@ class TableConfig(BaseModel):
     target_table_name: str
     json_entrypoint: Optional[str] = None
     relationship: Optional[TableRelationship] = None
+    primary_keys: list[str]
+
+    @model_validator(mode="after")
+    def validate_primary_keys(self):
+        model_fields = set(self.data_model.model_fields.keys())
+        invalid_keys = [key for key in self.primary_keys if key not in model_fields]
+        if invalid_keys:
+            raise ValueError(
+                f"Primary keys {invalid_keys} are not fields in model {self.data_model.__name__}. "
+                f"Available fields: {sorted(model_fields)}"
+            )
+        return self
 
 
 class APIEndpointConfig(BaseModel):
