@@ -39,6 +39,8 @@ class Processor:
             endpoint=endpoint,
             endpoint_config=endpoint_config,
             client=self.client,
+            engine=self.engine,
+            metadata=self.metadata,
         )
         result = await runner.run()
         self.results.append(result)

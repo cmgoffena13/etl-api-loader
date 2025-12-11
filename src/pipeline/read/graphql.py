@@ -41,6 +41,7 @@ class GraphQLReader(BaseReader):
                 backoff_starting_delay=endpoint_config.backoff_starting_delay,
                 headers=dict(request.headers),
                 params=default_params,
+                json=endpoint_config.body,
             )
             response.raise_for_status()
 

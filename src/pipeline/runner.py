@@ -36,8 +36,13 @@ class PipelineRunner:
         self.Session: sessionmaker[Session] = sessionmaker(bind=self.engine)
         self.endpoint = endpoint.lstrip("/")
         self.endpoint_config = endpoint_config
-        base_url = source.base_url.rstrip("/") + "/"
-        self.url = urljoin(base_url, self.endpoint.lstrip("/"))
+
+        if source.type == "graphql":
+            self.url = source.base_url
+        else:
+            base_url = source.base_url.rstrip("/") + "/"
+            self.url = urljoin(base_url, self.endpoint.lstrip("/"))
+
         self.client = client
         self.reader = ReaderFactory.create_reader(source=source, client=client)
         self.parser = ParserFactory.create_parser(

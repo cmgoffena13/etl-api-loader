@@ -21,3 +21,9 @@ upgrade:
 
 run:
 	uv run main.py
+
+postgres:
+	docker compose up -d postgres
+
+mysql:
+	docker compose up -d mysql

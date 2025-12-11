@@ -1,3 +1,4 @@
+import warnings
 from logging.config import dictConfig
 
 import structlog
@@ -14,6 +15,13 @@ from src.settings import config
 
 
 def setup_logging():
+    warnings.filterwarnings(
+        "ignore",
+        message=".*Pydantic serializer warnings.*",
+        category=UserWarning,
+        module="pydantic.main",
+    )
+
     structlog.configure(
         processors=[
             structlog.contextvars.merge_contextvars,
