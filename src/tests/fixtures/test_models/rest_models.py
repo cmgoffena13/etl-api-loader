@@ -1,6 +1,6 @@
-from pydantic import BaseModel
+from sqlmodel import Field, SQLModel
 
 
-class TestItem(BaseModel):
-    id: int
+class TestItem(SQLModel, table=True):
+    id: int = Field(primary_key=True)
     name: str
