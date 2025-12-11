@@ -4,7 +4,7 @@ from httpx import Request
 
 from src.pipeline.read.base import BaseReader
 from src.pipeline.read.json_utils import extract_items
-from src.processor.client import AsyncProductionHTTPClient
+from src.process.client import AsyncProductionHTTPClient
 from src.sources.base import APIConfig, APIEndpointConfig
 
 

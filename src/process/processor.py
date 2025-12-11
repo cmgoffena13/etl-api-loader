@@ -7,7 +7,7 @@ import psutil
 import structlog
 
 from src.pipeline.runner import PipelineRunner
-from src.processor.client import AsyncProductionHTTPClient
+from src.process.client import AsyncProductionHTTPClient
 from src.sources.master import MASTER_SOURCE_REGISTRY
 
 logger = structlog.getLogger(__name__)

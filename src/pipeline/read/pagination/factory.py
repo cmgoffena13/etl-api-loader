@@ -3,7 +3,7 @@ from typing import Optional
 from src.pipeline.read.pagination.base import BasePaginationStrategy
 from src.pipeline.read.pagination.next_url import NextURLPaginationStrategy
 from src.pipeline.read.pagination.offset import OffsetPaginationStrategy
-from src.processor.client import AsyncProductionHTTPClient
+from src.process.client import AsyncProductionHTTPClient
 from src.sources.base import APIConfig
 
 

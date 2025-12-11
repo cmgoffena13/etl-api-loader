@@ -3,7 +3,7 @@ from collections.abc import AsyncGenerator
 
 from src.pipeline.read.authentication.factory import AuthenticationStrategyFactory
 from src.pipeline.read.pagination.factory import PaginationStrategyFactory
-from src.processor.client import AsyncProductionHTTPClient
+from src.process.client import AsyncProductionHTTPClient
 from src.settings import config
 from src.sources.base import APIConfig, APIEndpointConfig
 

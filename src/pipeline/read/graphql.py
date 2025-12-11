@@ -1,7 +1,7 @@
 from collections.abc import AsyncGenerator
 
 from src.pipeline.read.base import BaseReader
-from src.processor.client import AsyncProductionHTTPClient
+from src.process.client import AsyncProductionHTTPClient
 from src.sources.base import APIConfig, APIEndpointConfig
 
 

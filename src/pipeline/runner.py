@@ -8,7 +8,7 @@ from structlog.contextvars import bind_contextvars, clear_contextvars
 
 from src.pipeline.parse.factory import ParserFactory
 from src.pipeline.read.factory import ReaderFactory
-from src.processor.client import AsyncProductionHTTPClient
+from src.process.client import AsyncProductionHTTPClient
 from src.sources.base import APIConfig, APIEndpointConfig, TableBatch
 
 logger = structlog.getLogger(__name__)

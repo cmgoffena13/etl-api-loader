@@ -1,7 +1,7 @@
 import asyncio
 
 from src.logging_conf import setup_logging
-from src.processor.processor import Processor
+from src.process.processor import Processor
 
 
 async def main():

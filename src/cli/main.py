@@ -7,7 +7,7 @@ from rich.logging import RichHandler
 from typer import Option, Typer
 
 from src.logging_conf import setup_logging
-from src.processor.processor import Processor
+from src.process.processor import Processor
 from src.settings import config
 
 app = Typer(help="API Loader - ETL Pipeline for APIs")

@@ -1,7 +1,7 @@
 from src.pipeline.read.base import BaseReader
 from src.pipeline.read.graphql import GraphQLReader
 from src.pipeline.read.rest import RESTReader
-from src.processor.client import AsyncProductionHTTPClient
+from src.process.client import AsyncProductionHTTPClient
 from src.sources.base import APIConfig
 
 

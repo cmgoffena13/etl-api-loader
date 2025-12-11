@@ -7,7 +7,7 @@ import pytest
 import pytest_asyncio
 from pytest_httpx import HTTPXMock
 
-from src.processor.client import AsyncProductionHTTPClient
+from src.process.client import AsyncProductionHTTPClient
 from src.tests.fixtures.test_responses.rest_next_url_pagination import (
     TEST_REST_NEXT_URL_PAGINATION_PAGE_1_RESPONSE,
     TEST_REST_NEXT_URL_PAGINATION_PAGE_2_RESPONSE,

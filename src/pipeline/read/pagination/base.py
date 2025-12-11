@@ -3,7 +3,7 @@ from collections.abc import AsyncGenerator
 
 from httpx import Request
 
-from src.processor.client import AsyncProductionHTTPClient
+from src.process.client import AsyncProductionHTTPClient
 from src.sources.base import APIConfig, APIEndpointConfig
 
 
