@@ -12,6 +12,15 @@ from src.utils import aws_secret_helper, azure_secret_helper, gcp_secret_helper
 logger = structlog.getLogger(__name__)
 
 
+SUPPORTED_DATABASE_DRIVERS = {
+    "postgresql": "postgresql",
+    "mysql": "mysql",
+    "mssql": "mssql",
+    "sqlite": "sqlite",
+    "bigquery": "bigquery",
+}
+
+
 class BaseConfig(BaseSettings):
     ENV_STATE: Optional[str] = None
 
@@ -58,6 +67,15 @@ class GlobalConfig(BaseConfig):
 
     BATCH_SIZE: int = 10000
     DATABASE_URL: Optional[str] = None
+
+    @property
+    def DRIVERNAME(self) -> str:
+        for drivername, dialect in SUPPORTED_DATABASE_DRIVERS.items():
+            if drivername in self.DATABASE_URL.lower():
+                return dialect.lower()
+        raise ValueError(
+            f"Unsupported database driver in DATABASE_URL: {self.DATABASE_URL}"
+        )
 
     # AWS Secrets Manager settings
     AWS_ACCESS_KEY_ID: Optional[str] = None
