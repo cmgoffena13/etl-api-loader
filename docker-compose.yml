@@ -1,0 +1,77 @@
+services:
+  postgres:
+    image: postgres:18
+    container_name: apiloader-postgres
+    environment:
+      POSTGRES_USER: apiloader
+      POSTGRES_PASSWORD: apiloader
+      POSTGRES_DB: apiloader
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql
+
+  mysql:
+    image: mysql:8.0
+    container_name: apiloader-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: apiloader
+      MYSQL_USER: apiloader
+      MYSQL_PASSWORD: apiloader
+      MYSQL_DATABASE: apiloader
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    command: --default-authentication-plugin=mysql_native_password
+
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    platform: linux/amd64
+    container_name: apiloader-sqlserver
+    environment:
+      ACCEPT_EULA: "Y"
+      SA_PASSWORD: "ApiLoader123!"
+      MSSQL_PID: "Developer"
+    ports:
+      - "1433:1433"
+    volumes:
+      - sqlserver_data:/var/opt/mssql
+
+  sqlserver-init:
+    image: mcr.microsoft.com/mssql-tools
+    platform: linux/amd64
+    container_name: apiloader-sqlserver-init
+    depends_on:
+      - sqlserver
+    volumes:
+      - ./docker/sqlserver-init.sql:/init.sql
+    entrypoint:
+      - /bin/bash
+      - -c
+      - |
+        echo "Waiting for SQL Server to be ready..."
+        until /opt/mssql-tools/bin/sqlcmd -S sqlserver -U sa -P "ApiLoader123!" -Q "SELECT 1" > /dev/null 2>&1
+        do
+          sleep 5
+        done
+        echo "Running initialization script..."
+        /opt/mssql-tools/bin/sqlcmd -S sqlserver -U sa -P "ApiLoader123!" -i /init.sql
+        echo "Initialization complete."
+
+  apiloader-sqlserver-bulk:
+    build:
+      context: .
+      dockerfile: Dockerfile.sqlserver
+    container_name: apiloader-sqlserver-bulk
+    depends_on:
+      - sqlserver
+    environment:
+      DEV_DATABASE_URL: mssql+pyodbc://sa:ApiLoader123!@sqlserver:1433/apiloader?driver=ODBC+Driver+18+for+SQL+Server&TrustServerCertificate=yes
+      DEV_SQL_SERVER_SQLBULKCOPY_FLAG: "true"
+
+volumes:
+  postgres_data:
+  mysql_data:
+  sqlserver_data:
+
