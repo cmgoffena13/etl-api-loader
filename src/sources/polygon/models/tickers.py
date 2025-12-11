@@ -1,10 +1,10 @@
 from typing import Optional
 
-from pydantic import BaseModel
 from pydantic_extra_types.pendulum_dt import DateTime
+from sqlmodel import SQLModel
 
 
-class PolygonTicker(BaseModel):
+class PolygonTicker(SQLModel, table=True):
     active: bool
     cik: Optional[str] = None
     composite_figi: Optional[str] = None

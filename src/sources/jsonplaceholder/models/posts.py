@@ -1,8 +1,8 @@
-from pydantic import BaseModel, Field
+from sqlmodel import Field, SQLModel
 
 
-class JSONPlaceholderPost(BaseModel):
-    id: int = Field(alias="root[*].id")
+class JSONPlaceholderPost(SQLModel, table=True):
+    id: int = Field(primary_key=True, alias="root[*].id")
     title: str = Field(alias="root[*].title")
     body: str = Field(alias="root[*].body")
     userId: int = Field(alias="root[*].userId")

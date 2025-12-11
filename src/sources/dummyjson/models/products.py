@@ -1,10 +1,10 @@
 from typing import Optional
 
-from pydantic import BaseModel
 from pydantic_extra_types.pendulum_dt import DateTime
+from sqlmodel import SQLModel
 
 
-class Review(BaseModel):
+class DummyJSONReview(SQLModel, table=True):
     rating: int
     comment: str
     date: DateTime
@@ -12,7 +12,7 @@ class Review(BaseModel):
     reviewerEmail: str
 
 
-class DummyJSONProduct(BaseModel):
+class DummyJSONProduct(SQLModel, table=True):
     id: int
     title: str
     description: str

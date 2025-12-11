@@ -5,7 +5,7 @@ from src.sources.base import (
     TableConfig,
     TableRelationship,
 )
-from src.sources.dummyjson.models.products import DummyJSONProduct, Review
+from src.sources.dummyjson.models.products import DummyJSONProduct, DummyJSONReview
 
 DUMMYJSON_CONFIG = APIConfig(
     name="dummyjson",
@@ -31,7 +31,7 @@ DUMMYJSON_CONFIG = APIConfig(
                     primary_keys=["id"],
                 ),
                 TableConfig(
-                    data_model=Review,
+                    data_model=DummyJSONReview,
                     stage_table_name="stage_reviews",
                     target_table_name="reviews",
                     json_entrypoint="reviews",
