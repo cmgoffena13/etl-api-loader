@@ -4,6 +4,7 @@ from typing import Any, AsyncGenerator
 
 from pydantic import TypeAdapter, ValidationError
 
+from src.pipeline.db_utils import db_create_row_hash
 from src.pipeline.parse.base import BaseParser
 from src.sources.base import APIEndpointConfig, TableBatch
 
@@ -17,6 +18,7 @@ class JSONParser(BaseParser):
         self.indexed_cache = {}
         self.regex_pattern_cache = {}
         self.model_fields_cache = {}
+        self.sorted_keys_cache = {}
         self.index_pattern = re.compile(r"\[(\d+)\]")
         self._initialized = False
 
@@ -53,13 +55,21 @@ class JSONParser(BaseParser):
 
         return ".".join(common_segments) if common_segments else "root"
 
+    async def _model_specs_find_deepest_wildcard_path(self, aliases: list[str]) -> str:
+        return max(
+            (".".join(alias.split(".")[:-1]) for alias in aliases),
+            key=lambda p: p.count("."),
+        )
+
     async def _create_table_batches_and_adapters(self) -> None:
         for table_config in self.endpoint_config.tables:
             model_cls = table_config.data_model
+            model_name = model_cls.__name__
             all_aliases = []
             fields = []
+            sorted_keys = []
 
-            for field_name, field_info in model_cls.model_fields.items():
+            for field_name, field_info in sorted(model_cls.model_fields.items()):
                 alias = field_info.alias
                 if alias is None:
                     raise ValueError(f"Alias is required for field {field_name}")
@@ -67,9 +77,10 @@ class JSONParser(BaseParser):
                 has_wildcard = "[*]" in alias
                 fields.append((field_name, alias, has_wildcard))
                 all_aliases.append(alias)
+                sorted_keys.append(field_name)
 
-            model_name = model_cls.__name__
             self.model_fields_cache[model_name] = fields
+            self.sorted_keys_cache[model_name] = tuple(sorted_keys)
 
             wildcard_aliases = [
                 alias for _, alias, has_wildcard in fields if has_wildcard
@@ -92,12 +103,6 @@ class JSONParser(BaseParser):
 
             self.table_batches[model_name] = table_batch
             self.model_adapters[model_name] = TypeAdapter(model_cls)
-
-    async def _model_specs_find_deepest_wildcard_path(self, aliases: list[str]) -> str:
-        return max(
-            (".".join(alias.split(".")[:-1]) for alias in aliases),
-            key=lambda p: p.count("."),
-        )
 
     async def _parsing_path_matches(self, path: str, pattern: str) -> bool:
         if pattern not in self.regex_pattern_cache:
@@ -171,7 +176,10 @@ class JSONParser(BaseParser):
                 try:
                     data = await self._parsing_build_model_data(path, table_batch)
                     adapter = self.model_adapters[model_name]
-                    table_batch.add_record(adapter.validate_python(data).model_dump())
+                    sorted_keys = self.sorted_keys_cache[model_name]
+                    record = adapter.validate_python(data).model_dump()
+                    record["etl_row_hash"] = db_create_row_hash(record, sorted_keys)
+                    table_batch.add_record(record)
                 except ValidationError as e:
                     self.errors.append(
                         {
