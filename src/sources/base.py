@@ -1,6 +1,6 @@
 from typing import Any, Literal, Optional, Type
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, Field, model_validator
 from sqlmodel import SQLModel
 
 
@@ -60,22 +60,20 @@ class APIEndpointConfig(BaseModel):
     backoff_starting_delay: float = Field(default=1)
     tables: list[Type[SQLModel]]
 
-    model_config = ConfigDict(from_attributes=True)
-
 
 class APIConfig(BaseModel):
     name: str
     base_url: str
     type: Literal["rest", "graphql"]
+    parse_type: Literal["json"] = Field(default="json")
     json_entrypoint: Optional[str] = None
+    default_headers: dict[str, str] = Field(default_factory=dict)
     default_params: dict[str, Any] = Field(default_factory=dict)
     pagination_strategy: Optional[Literal["offset", "next_url"]] = None
     pagination: Optional[PaginationConfig] = None
     authentication_strategy: Optional[Literal["auth", "bearer"]] = None
     authentication_params: dict[str, Any] = Field(default_factory=dict)
-    default_headers: dict[str, str] = Field(default_factory=dict)
     endpoints: dict[str, APIEndpointConfig]
-    parse_type: Literal["json"] = Field(default="json")
 
     @model_validator(mode="after")
     def validate_pagination_config(self):
