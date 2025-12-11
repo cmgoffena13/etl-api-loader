@@ -62,8 +62,7 @@ class JSONParser(BaseParser):
         )
 
     async def _create_table_batches_and_adapters(self) -> None:
-        for table_config in self.endpoint_config.tables:
-            model_cls = table_config.data_model
+        for model_cls in self.endpoint_config.tables:
             model_name = model_cls.__name__
             all_aliases = []
             fields = []

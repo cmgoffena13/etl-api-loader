@@ -1,6 +1,7 @@
 import re
 from typing import Type
 
+import structlog
 from sqlalchemy import (
     Column,
     DateTime,
@@ -9,11 +10,17 @@ from sqlalchemy import (
     MetaData,
     PrimaryKeyConstraint,
     Table,
+    text,
 )
+from sqlalchemy.orm import Session, sessionmaker
 from sqlmodel import SQLModel
 from sqlmodel.main import get_sqlalchemy_type
 
 from src.settings import DevConfig, config
+from src.sources.base import APIConfig, APIEndpointConfig
+from src.utils import retry
+
+logger = structlog.getLogger(__name__)
 
 
 def camel_to_snake(name: str) -> str:
@@ -21,7 +28,8 @@ def camel_to_snake(name: str) -> str:
     return re.sub("([a-z0-9])([A-Z])", r"\1_\2", s1).lower()
 
 
-def create_production_table(
+@retry()
+def _create_production_table(
     model: Type[SQLModel], engine: Engine, metadata: MetaData
 ) -> Table:
     table_name = camel_to_snake(model.__name__)
@@ -49,7 +57,16 @@ def create_production_table(
     metadata.create_all(engine, tables=[table])
 
 
-def create_stage_table(
+def create_production_tables(
+    source: APIConfig, engine: Engine, metadata: MetaData
+) -> None:
+    for endpoint_config in source.endpoints.values():
+        for model in endpoint_config.tables:
+            _create_production_table(model, engine, metadata)
+
+
+@retry()
+def _create_stage_table(
     model: Type[SQLModel], engine: Engine, metadata: MetaData
 ) -> Table:
     snake_name = camel_to_snake(model.__name__)
@@ -65,3 +82,35 @@ def create_stage_table(
     table = Table(table_name, metadata, *columns)
     metadata.drop_all(engine, tables=[table])
     metadata.create_all(engine, tables=[table])
+
+
+def create_stage_tables(
+    endpoint_config: APIEndpointConfig, engine: Engine, metadata: MetaData
+) -> None:
+    for model in endpoint_config.tables:
+        _create_stage_table(model, engine, metadata)
+
+
+@retry()
+def _db_drop_stage_table(stage_table_name: str, Session: sessionmaker[Session]):
+    with Session() as session:
+        try:
+            drop_sql = text(f"DROP TABLE IF EXISTS {stage_table_name}")
+            session.execute(drop_sql)
+            session.commit()
+            logger.info(f"Dropped stage table: {stage_table_name}")
+        except Exception as e:
+            logger.exception(f"Error dropping stage table: {stage_table_name}: {e}")
+            session.rollback()
+            raise e
+
+
+def drop_stage_tables(
+    endpoint_config: APIEndpointConfig, Session: sessionmaker[Session]
+) -> None:
+    stage_table_names = []
+    for model in endpoint_config.tables:
+        table_name = camel_to_snake(model.__name__)
+        stage_table_names.append(f"stage_{table_name}")
+    for stage_table_name in stage_table_names:
+        _db_drop_stage_table(stage_table_name, Session)

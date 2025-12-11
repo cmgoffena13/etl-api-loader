@@ -4,11 +4,14 @@ from typing import Optional
 from urllib.parse import urljoin
 
 import structlog
+from sqlalchemy import Engine, MetaData
+from sqlalchemy.orm import Session, sessionmaker
 from structlog.contextvars import bind_contextvars, clear_contextvars
 
 from src.pipeline.parse.factory import ParserFactory
 from src.pipeline.read.factory import ReaderFactory
 from src.process.client import AsyncProductionHTTPClient
+from src.process.create_table import create_stage_tables, drop_stage_tables
 from src.sources.base import APIConfig, APIEndpointConfig, TableBatch
 
 logger = structlog.getLogger(__name__)
@@ -21,10 +24,16 @@ class PipelineRunner:
         endpoint: str,
         endpoint_config: APIEndpointConfig,
         client: AsyncProductionHTTPClient,
+        engine: Engine,
+        metadata: MetaData,
     ):
         clear_contextvars()
         bind_contextvars(source=source, endpoint=endpoint)
         self.source = source
+        self.engine = engine
+        self.metadata = metadata
+        create_stage_tables(endpoint_config, self.engine, self.metadata)
+        self.Session: sessionmaker[Session] = sessionmaker(bind=self.engine)
         self.endpoint = endpoint.lstrip("/")
         self.endpoint_config = endpoint_config
         base_url = source.base_url.rstrip("/") + "/"
@@ -54,6 +63,9 @@ class PipelineRunner:
 
     def publish(self) -> None:
         pass
+
+    def cleanup(self) -> None:
+        drop_stage_tables(self.endpoint_config, self.Session)
 
     async def run(self):
         try:

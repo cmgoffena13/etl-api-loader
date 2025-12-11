@@ -1,4 +1,4 @@
-from src.sources.base import APIConfig, APIEndpointConfig, TableConfig
+from src.sources.base import APIConfig, APIEndpointConfig
 from src.tests.fixtures.test_models.json_parser_models import (
     TestInvoice,
     TestInvoiceLineItem,
@@ -18,11 +18,7 @@ TEST_JSON_PARSER_CONFIG_SIMPLE = APIConfig(
         "products": APIEndpointConfig(
             json_entrypoint="products",
             tables=[
-                TableConfig(
-                    data_model=TestProduct,
-                    stage_table_name="stage_products",
-                    target_table_name="products",
-                )
+                TestProduct,
             ],
         )
     },
@@ -36,11 +32,7 @@ TEST_JSON_PARSER_CONFIG_NESTED = APIConfig(
         "products": APIEndpointConfig(
             json_entrypoint="products",
             tables=[
-                TableConfig(
-                    data_model=TestProductWithNested,
-                    stage_table_name="stage_products",
-                    target_table_name="products",
-                )
+                TestProductWithNested,
             ],
         )
     },
@@ -54,11 +46,7 @@ TEST_JSON_PARSER_CONFIG_WITH_LISTS = APIConfig(
         "products": APIEndpointConfig(
             json_entrypoint="products",
             tables=[
-                TableConfig(
-                    data_model=TestProductWithList,
-                    stage_table_name="stage_products",
-                    target_table_name="products",
-                )
+                TestProductWithList,
             ],
         )
     },
@@ -72,16 +60,8 @@ TEST_JSON_PARSER_CONFIG_MULTIPLE_TABLES = APIConfig(
         "products": APIEndpointConfig(
             json_entrypoint="products",
             tables=[
-                TableConfig(
-                    data_model=TestProduct,
-                    stage_table_name="stage_products",
-                    target_table_name="products",
-                ),
-                TableConfig(
-                    data_model=TestReview,
-                    stage_table_name="stage_reviews",
-                    target_table_name="reviews",
-                ),
+                TestProduct,
+                TestReview,
             ],
         )
     },
@@ -95,11 +75,7 @@ TEST_JSON_PARSER_CONFIG_LIST_ROOT = APIConfig(
         "posts": APIEndpointConfig(
             json_entrypoint=None,
             tables=[
-                TableConfig(
-                    data_model=TestListItem,
-                    stage_table_name="stage_posts",
-                    target_table_name="posts",
-                )
+                TestListItem,
             ],
         )
     },
@@ -113,21 +89,9 @@ TEST_JSON_PARSER_CONFIG_DEEPLY_NESTED = APIConfig(
         "invoices": APIEndpointConfig(
             json_entrypoint=None,
             tables=[
-                TableConfig(
-                    data_model=TestInvoice,
-                    stage_table_name="stage_invoices",
-                    target_table_name="invoices",
-                ),
-                TableConfig(
-                    data_model=TestInvoiceLineItem,
-                    stage_table_name="stage_invoice_line_items",
-                    target_table_name="invoice_line_items",
-                ),
-                TableConfig(
-                    data_model=TestTransaction,
-                    stage_table_name="stage_transactions",
-                    target_table_name="transactions",
-                ),
+                TestInvoice,
+                TestInvoiceLineItem,
+                TestTransaction,
             ],
         )
     },

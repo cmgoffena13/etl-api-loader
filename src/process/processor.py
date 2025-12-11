@@ -8,6 +8,8 @@ import structlog
 
 from src.pipeline.runner import PipelineRunner
 from src.process.client import AsyncProductionHTTPClient
+from src.process.create_table import create_production_tables
+from src.process.db import setup_db
 from src.sources.master import MASTER_SOURCE_REGISTRY
 
 logger = structlog.getLogger(__name__)
@@ -16,6 +18,7 @@ logger = structlog.getLogger(__name__)
 class Processor:
     def __init__(self):
         self.client = AsyncProductionHTTPClient()
+        self.engine, self.metadata = setup_db()
         self._closed = False
         self._thread_pool_shutdown = False
         self.thread_pool = None
@@ -42,6 +45,7 @@ class Processor:
 
     async def process_api(self, name: str):
         source = MASTER_SOURCE_REGISTRY.get_source(name)
+        create_production_tables(source, self.engine, self.metadata)
         # Process Sequentially to respect API rate-limits
         for endpoint, endpoint_config in source.endpoints.items():
             runner = PipelineRunner(
@@ -49,6 +53,8 @@ class Processor:
                 endpoint=endpoint,
                 endpoint_config=endpoint_config,
                 client=self.client,
+                engine=self.engine,
+                metadata=self.metadata,
             )
             result = await runner.run()
             self.results.append(result)
