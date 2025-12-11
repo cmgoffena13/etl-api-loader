@@ -19,11 +19,13 @@ def db_create_row_hash(
     return xxhash.xxh128(data_string.encode("utf-8")).digest()
 
 
-def create_stage_table(
-    model: Type[SQLModel], stage_table_name: str, engine: Engine
+def create_table(
+    model: Type[SQLModel], engine: Engine, is_stage: bool = True
 ) -> Type[SQLModel]:
     fields = {}
     annotations = {}
+
+    table_name = f"stage_{model.__name__}" if is_stage else model.__name__
     for field_name, field_info in model.model_fields.items():
         field_type = field_info.annotation
         field_kwargs = {}
@@ -32,35 +34,26 @@ def create_stage_table(
         if field_info.default_factory:
             field_kwargs["default_factory"] = field_info.default_factory
 
-        # Explicitly set primary_key=False (or omit it) to remove primary key constraint
-        # Don't include primary_key in field_kwargs since we want to remove it
         fields[field_name] = Field(**field_kwargs)
         annotations[field_name] = field_type
 
     # Add etl_row_hash field
-    fields["etl_row_hash"] = Field(default="")
+    fields["etl_row_hash"] = Field()
     annotations["etl_row_hash"] = str
 
-    # Create the new model class dynamically
-    # SQLModel will automatically create a table if __tablename__ is set
-    stage_model = type(
+    model_cls = type(
         f"{model.__name__}Stage",
         (SQLModel,),
         {
             "__annotations__": annotations,
             **fields,
-            "__tablename__": stage_table_name,
+            "__tablename__": table_name,
         },
     )
 
-    # Ensure the class is properly initialized as a SQLModel table
-    # SQLModel's __init_subclass__ should handle this, but we need to trigger it
-    # by accessing the registry or creating the table definition
-    if not hasattr(stage_model, "__table__"):
-        # Force SQLModel to create the table definition
-        stage_model.__init_subclass__()
+    if not hasattr(model_cls, "__table__"):
+        model_cls.__init_subclass__()
 
-    # Create the table in the database using SQLModel's metadata
-    SQLModel.metadata.create_all(engine, tables=[stage_model.__table__])
+    SQLModel.metadata.create_all(engine, tables=[model_cls.__table__])
 
-    return stage_model
+    return model_cls

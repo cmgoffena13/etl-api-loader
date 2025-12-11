@@ -40,7 +40,7 @@ class OffsetPaginationStrategy(BasePaginationStrategy):
         request: Request,
         offset: int,
         endpoint_config: APIEndpointConfig,
-    ) -> dict:
+    ) -> dict | None:
         async with self.semaphore:
             params = dict(request.url.params)
             params[self.offset_param] = offset
@@ -77,7 +77,7 @@ class OffsetPaginationStrategy(BasePaginationStrategy):
                         if e.response.text
                         else None,
                     )
-                    return {}
+                    return None
                 raise
 
             return response.json()

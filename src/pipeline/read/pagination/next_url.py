@@ -28,7 +28,7 @@ class NextURLPaginationStrategy(BasePaginationStrategy):
 
     async def _fetch_url(
         self, url: str, headers: dict, endpoint_config: APIEndpointConfig
-    ) -> dict:
+    ) -> dict | None:
         """Fetch a page using the provided URL."""
         logger.debug("Fetching paginated page", url=url)
         try:
@@ -50,7 +50,7 @@ class NextURLPaginationStrategy(BasePaginationStrategy):
                     url=str(e.request.url),
                     response_text=e.response.text[:200] if e.response.text else None,
                 )
-                return {}
+                return None
             raise
 
         return response.json()

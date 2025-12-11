@@ -42,3 +42,13 @@ dev = [
     "ruff>=0.14.8",
     "scalene>=1.5.55",
 ]
+
+[tool.pytest.ini_options]
+testpaths = [ "src/tests" ]
+pythonpath = [ "." ]
+filterwarnings = [
+    "ignore::UserWarning:pydantic.main",
+]
+
+[tool.ruff]
+lint.select = ["I"]
