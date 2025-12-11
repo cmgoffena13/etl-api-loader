@@ -38,6 +38,8 @@ def _create_production_table(
     primary_keys = model.__table__.primary_key.columns.keys()
     for name, field in model.model_fields.items():
         sa_type = get_sqlalchemy_type(field)
+        if sa_type is DateTime:
+            sa_type = DateTime(timezone=True)
         nullable = not field.is_required()
         sa_column = Column(name, sa_type, nullable=nullable)
         columns.append(sa_column)
@@ -74,6 +76,8 @@ def _create_stage_table(
     columns = []
     for name, field in model.model_fields.items():
         sa_type = get_sqlalchemy_type(field)
+        if sa_type is DateTime:
+            sa_type = DateTime(timezone=True)
         nullable = not field.is_required()
         sa_column = Column(name, sa_type, nullable=nullable)
         columns.append(sa_column)
