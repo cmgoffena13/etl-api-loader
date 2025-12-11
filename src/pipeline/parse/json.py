@@ -174,10 +174,13 @@ class JSONParser(BaseParser):
             if await self._parsing_path_matches(path, table_batch.json_path_pattern):
                 try:
                     data = await self._parsing_build_model_data(path, table_batch)
+
                     adapter = self.model_adapters[model_name]
                     sorted_keys = self.sorted_keys_cache[model_name]
+
                     record = adapter.validate_python(data).model_dump()
                     record["etl_row_hash"] = db_create_row_hash(record, sorted_keys)
+
                     table_batch.add_record(record)
                 except ValidationError as e:
                     self.errors.append(
@@ -211,8 +214,8 @@ class JSONParser(BaseParser):
         await self._initialize()
         for table_batch in self.table_batches.values():
             table_batch.clear_records()
-        await self.clear_index_cache()
         for record in batch:
+            await self.clear_index_cache()
             await self._parsing_walk(record)
         if self.errors:
             raise ValueError(self.errors)
