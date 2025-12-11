@@ -7,6 +7,7 @@ RICKANDMORTY_CONFIG = APIConfig(
     type="graphql",
     endpoints={
         "characters": APIEndpointConfig(
+            json_entrypoint="data.characters.results",
             body={
                 "query": """
                 query GetCharacters($page: Int) {
