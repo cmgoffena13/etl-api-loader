@@ -1,7 +1,7 @@
 from src.sources.base import APIConfig, APIEndpointConfig
 
 
-def _get_nested_value(data: dict, path: str) -> any:
+def _get_nested_value(data: dict, path: str) -> list[dict] | dict:
     keys = path.split(".")
     current = data
     for key in keys:
