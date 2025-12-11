@@ -1,6 +1,7 @@
 from typing import Any, Literal, Optional, Type
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
+from sqlmodel import SQLModel
 
 
 class TableBatch:
@@ -37,6 +38,7 @@ class OffsetPaginationConfig(PaginationConfig):
     max_concurrent: int = Field(default=5)
     offset: int
     limit: int
+
     use_next_offset: bool = Field(default=False)
     next_offset_key: str = Field(default="next_offset")
 
@@ -59,23 +61,11 @@ class TableRelationship(BaseModel):
 
 
 class TableConfig(BaseModel):
-    data_model: Type[BaseModel]
+    data_model: Type[SQLModel]
     stage_table_name: str
     target_table_name: str
     json_entrypoint: Optional[str] = None
     relationship: Optional[TableRelationship] = None
-    primary_keys: list[str]
-
-    @model_validator(mode="after")
-    def validate_primary_keys(self):
-        model_fields = set(self.data_model.model_fields.keys())
-        invalid_keys = [key for key in self.primary_keys if key not in model_fields]
-        if invalid_keys:
-            raise ValueError(
-                f"Primary keys {invalid_keys} are not fields in model {self.data_model.__name__}. "
-                f"Available fields: {sorted(model_fields)}"
-            )
-        return self
 
 
 class APIEndpointConfig(BaseModel):

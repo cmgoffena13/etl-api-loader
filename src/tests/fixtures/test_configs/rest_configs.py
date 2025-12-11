@@ -20,7 +20,6 @@ TEST_REST_CONFIG_NO_PAGINATION = APIConfig(
                     data_model=TestItem,
                     stage_table_name="stage_items",
                     target_table_name="items",
-                    primary_keys=["id"],
                 )
             ],
         )
@@ -49,7 +48,6 @@ TEST_REST_CONFIG_WITH_OFFSET_PAGINATION = APIConfig(
                     data_model=TestItem,
                     stage_table_name="stage_items",
                     target_table_name="items",
-                    primary_keys=["id"],
                 )
             ],
         )
@@ -73,7 +71,6 @@ TEST_REST_CONFIG_WITH_NEXT_URL_PAGINATION = APIConfig(
                     data_model=TestItem,
                     stage_table_name="stage_items",
                     target_table_name="items",
-                    primary_keys=["id"],
                 )
             ],
         )

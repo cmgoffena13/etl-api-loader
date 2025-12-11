@@ -27,7 +27,6 @@ POLYGON_CONFIG = APIConfig(
                     data_model=PolygonTicker,
                     stage_table_name="stage_tickers",
                     target_table_name="tickers",
-                    primary_keys=["ticker"],
                 )
             ],
         )

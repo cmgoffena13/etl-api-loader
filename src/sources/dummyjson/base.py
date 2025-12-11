@@ -28,7 +28,6 @@ DUMMYJSON_CONFIG = APIConfig(
                     data_model=DummyJSONProduct,
                     stage_table_name="stage_products",
                     target_table_name="products",
-                    primary_keys=["id"],
                 ),
                 TableConfig(
                     data_model=DummyJSONReview,
@@ -39,7 +38,6 @@ DUMMYJSON_CONFIG = APIConfig(
                         parent_id_field="id",
                         foreign_key_name="product_id",
                     ),
-                    primary_keys=["reviewerEmail", "date"],
                 ),
             ],
         )

@@ -1,7 +1,7 @@
 from typing import Optional
 
 from pydantic_extra_types.pendulum_dt import DateTime
-from sqlmodel import SQLModel
+from sqlmodel import Field, SQLModel
 
 
 class PolygonTicker(SQLModel, table=True):
@@ -15,5 +15,5 @@ class PolygonTicker(SQLModel, table=True):
     name: str
     primary_exchange: Optional[str] = None
     share_class_figi: Optional[str] = None
-    ticker: str
+    ticker: str = Field(primary_key=True)
     type: str

@@ -1,3 +1,4 @@
+import json
 import re
 from typing import Any, AsyncGenerator
 
@@ -145,12 +146,24 @@ class JSONParser(BaseParser):
         model_name = table_batch.data_model.__name__
         for field_name, alias, has_wildcard in self.model_fields_cache[model_name]:
             if has_wildcard:
-                resolved_alias = await self._parsing_replace_wildcard_with_index(
-                    alias, path
-                )
+                list_path = alias.replace("[*]", "")
+                list_value = self.indexed_cache.get(list_path)
+                if isinstance(list_value, list):
+                    if not list_value or not isinstance(list_value[0], dict):
+                        data[field_name] = json.dumps(list_value)
+                    else:
+                        resolved_alias = (
+                            await self._parsing_replace_wildcard_with_index(alias, path)
+                        )
+                        data[field_name] = self.indexed_cache.get(resolved_alias)
+                else:
+                    resolved_alias = await self._parsing_replace_wildcard_with_index(
+                        alias, path
+                    )
+                    data[field_name] = self.indexed_cache.get(resolved_alias)
             else:
                 resolved_alias = alias
-            data[field_name] = self.indexed_cache.get(resolved_alias)
+                data[field_name] = self.indexed_cache.get(resolved_alias)
         return data
 
     async def _parsing_extract_models_at_path(self, path: str) -> None:
