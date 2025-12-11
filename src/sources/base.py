@@ -7,11 +7,9 @@ from sqlmodel import SQLModel
 class TableBatch:
     def __init__(
         self,
-        stage_table_name: str,
-        data_model: Type[BaseModel],
+        data_model: Type[SQLModel],
         json_path_pattern: str,
     ):
-        self.stage_table_name = stage_table_name
         self.data_model = data_model
         self._records = []
         self.json_path_pattern = json_path_pattern
@@ -55,17 +53,10 @@ class NextUrlPaginationConfig(PaginationConfig):
     next_url_key: str = Field(default="next_url")
 
 
-class TableRelationship(BaseModel):
-    parent_id_field: str
-    foreign_key_name: str
-
-
 class TableConfig(BaseModel):
     data_model: Type[SQLModel]
     stage_table_name: str
     target_table_name: str
-    json_entrypoint: Optional[str] = None
-    relationship: Optional[TableRelationship] = None
 
 
 class APIEndpointConfig(BaseModel):
@@ -87,7 +78,7 @@ class APIConfig(BaseModel):
     authentication_strategy: Optional[Literal["auth", "bearer"]] = None
     authentication_params: dict[str, Any] = Field(default_factory=dict)
     default_headers: dict[str, str] = Field(default_factory=dict)
-    endpoints: dict[str, APIEndpointConfig] = Field(default_factory=dict)
+    endpoints: dict[str, APIEndpointConfig]
     parse_type: Literal["json"] = Field(default="json")
 
     @model_validator(mode="after")
@@ -95,5 +86,16 @@ class APIConfig(BaseModel):
         if self.pagination_strategy is not None and self.pagination is None:
             raise ValueError(
                 "pagination must be provided when pagination_strategy is set"
+            )
+        return self
+
+    @model_validator(mode="after")
+    def validate_authentication_params(self):
+        if (
+            self.authentication_strategy is not None
+            and self.authentication_params == {}
+        ):
+            raise ValueError(
+                "authentication_params must be provided when authentication_strategy is set"
             )
         return self

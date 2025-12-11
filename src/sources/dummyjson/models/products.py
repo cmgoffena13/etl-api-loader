@@ -4,7 +4,7 @@ from pydantic_extra_types.pendulum_dt import DateTime
 from sqlmodel import Field, SQLModel
 
 
-class DummyJSONReview(SQLModel, table=True):
+class DummyJSONReviews(SQLModel, table=True):
     product_id: int = Field(primary_key=True, alias="root.reviews[*].productId")
     reviewer_name: str = Field(primary_key=True, alias="root.reviews[*].reviewerName")
     rating: int = Field(alias="root.reviews[*].rating")
@@ -13,7 +13,7 @@ class DummyJSONReview(SQLModel, table=True):
     reviewer_email: str = Field(alias="root.reviews[*].reviewerEmail")
 
 
-class DummyJSONProduct(SQLModel, table=True):
+class DummyJSONProducts(SQLModel, table=True):
     id: int = Field(primary_key=True, alias="root.id")
     title: str = Field(alias="root.title")
     description: str = Field(alias="root.description")

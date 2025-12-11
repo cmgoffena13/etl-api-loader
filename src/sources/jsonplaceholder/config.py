@@ -1,5 +1,5 @@
 from src.sources.base import APIConfig, APIEndpointConfig, TableConfig
-from src.sources.jsonplaceholder.models.posts import JSONPlaceholderPost
+from src.sources.jsonplaceholder.models.posts import JSONPlaceholderPosts
 
 JSONPLACEHOLDER_CONFIG = APIConfig(
     name="jsonplaceholder",
@@ -10,7 +10,7 @@ JSONPLACEHOLDER_CONFIG = APIConfig(
             json_entrypoint=None,
             tables=[
                 TableConfig(
-                    data_model=JSONPlaceholderPost,
+                    data_model=JSONPlaceholderPosts,
                     stage_table_name="stage_posts",
                     target_table_name="posts",
                 )

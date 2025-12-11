@@ -3,9 +3,8 @@ from src.sources.base import (
     APIEndpointConfig,
     OffsetPaginationConfig,
     TableConfig,
-    TableRelationship,
 )
-from src.sources.dummyjson.models.products import DummyJSONProduct, DummyJSONReview
+from src.sources.dummyjson.models.products import DummyJSONProducts, DummyJSONReviews
 
 DUMMYJSON_CONFIG = APIConfig(
     name="dummyjson",
@@ -25,19 +24,14 @@ DUMMYJSON_CONFIG = APIConfig(
             json_entrypoint="products",
             tables=[
                 TableConfig(
-                    data_model=DummyJSONProduct,
+                    data_model=DummyJSONProducts,
                     stage_table_name="stage_products",
                     target_table_name="products",
                 ),
                 TableConfig(
-                    data_model=DummyJSONReview,
+                    data_model=DummyJSONReviews,
                     stage_table_name="stage_reviews",
                     target_table_name="reviews",
-                    json_entrypoint="reviews",
-                    relationship=TableRelationship(
-                        parent_id_field="id",
-                        foreign_key_name="product_id",
-                    ),
                 ),
             ],
         )

@@ -16,7 +16,6 @@ TEST_REST_CONFIG_NO_PAGINATION = APIConfig(
             json_entrypoint="items",
             tables=[
                 TableConfig(
-                    json_entrypoint="items",
                     data_model=TestItem,
                     stage_table_name="stage_items",
                     target_table_name="items",
@@ -44,7 +43,6 @@ TEST_REST_CONFIG_WITH_OFFSET_PAGINATION = APIConfig(
             json_entrypoint="items",
             tables=[
                 TableConfig(
-                    json_entrypoint="items",
                     data_model=TestItem,
                     stage_table_name="stage_items",
                     target_table_name="items",
@@ -67,7 +65,6 @@ TEST_REST_CONFIG_WITH_NEXT_URL_PAGINATION = APIConfig(
             json_entrypoint="results",
             tables=[
                 TableConfig(
-                    json_entrypoint="results",
                     data_model=TestItem,
                     stage_table_name="stage_items",
                     target_table_name="items",

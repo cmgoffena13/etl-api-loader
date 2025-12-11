@@ -86,7 +86,6 @@ class JSONParser(BaseParser):
                 )
 
             table_batch = TableBatch(
-                stage_table_name=table_config.stage_table_name,
                 data_model=model_cls,
                 json_path_pattern=json_path_pattern,
             )

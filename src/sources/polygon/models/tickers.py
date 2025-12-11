@@ -4,7 +4,7 @@ from pydantic_extra_types.pendulum_dt import DateTime
 from sqlmodel import Field, SQLModel
 
 
-class PolygonTicker(SQLModel, table=True):
+class PolygonTickers(SQLModel, table=True):
     active: bool
     cik: Optional[str] = None
     composite_figi: Optional[str] = None
