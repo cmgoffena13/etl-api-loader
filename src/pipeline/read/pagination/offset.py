@@ -99,7 +99,7 @@ class OffsetPaginationStrategy(BasePaginationStrategy):
                 if not response_data:
                     break
 
-                items = extract_items(response_data, endpoint_config)
+                items = extract_items(response_data, endpoint_config, self.source)
                 if len(items) == 0:
                     break
 
@@ -139,7 +139,7 @@ class OffsetPaginationStrategy(BasePaginationStrategy):
                 for response_data in results:
                     if not response_data:
                         continue
-                    items = extract_items(response_data, endpoint_config)
+                    items = extract_items(response_data, endpoint_config, self.source)
                     if len(items) > 0:
                         all_empty = False
                         yield items
@@ -153,7 +153,9 @@ class OffsetPaginationStrategy(BasePaginationStrategy):
                 has_partial_page = False
                 for response_data in results:
                     if response_data:
-                        items = extract_items(response_data, endpoint_config)
+                        items = extract_items(
+                            response_data, endpoint_config, self.source
+                        )
                         if len(items) > 0 and len(items) < self.limit:
                             has_partial_page = True
                             break

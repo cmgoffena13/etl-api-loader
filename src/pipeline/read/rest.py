@@ -15,11 +15,15 @@ class RESTReader(BaseReader):
     async def read(
         self, url: str, endpoint_config: APIEndpointConfig
     ) -> AsyncGenerator[list[dict], None]:
+        default_params = {
+            **self.source.default_params,
+            **endpoint_config.default_params,
+        }
         request = Request(
             method="GET",
             url=url,
             headers=self.source.default_headers,
-            params=endpoint_config.default_params,
+            params=default_params,
         )
         if self.authentication_strategy is not None:
             request = self.authentication_strategy.apply(self.client, request)
@@ -35,11 +39,11 @@ class RESTReader(BaseReader):
                 url,
                 backoff_starting_delay=endpoint_config.backoff_starting_delay,
                 headers=dict(request.headers),
-                params=endpoint_config.default_params,
+                params=default_params,
             )
             response.raise_for_status()
 
             data = response.json()
-            items = extract_items(data, endpoint_config)
+            items = extract_items(data, endpoint_config, self.source)
             for batch in self._batch_items(items):
                 yield batch

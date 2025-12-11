@@ -67,6 +67,8 @@ class APIConfig(BaseModel):
     name: str
     base_url: str
     type: Literal["rest", "graphql"]
+    json_entrypoint: Optional[str] = None
+    default_params: dict[str, Any] = Field(default_factory=dict)
     pagination_strategy: Optional[Literal["offset", "next_url"]] = None
     pagination: Optional[PaginationConfig] = None
     authentication_strategy: Optional[Literal["auth", "bearer"]] = None

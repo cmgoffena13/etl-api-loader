@@ -72,7 +72,7 @@ class NextURLPaginationStrategy(BasePaginationStrategy):
             if not response_data:
                 break
 
-            items = extract_items(response_data, endpoint_config)
+            items = extract_items(response_data, endpoint_config, self.source)
             if len(items) == 0:
                 break
 
