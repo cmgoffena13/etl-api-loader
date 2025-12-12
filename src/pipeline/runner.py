@@ -10,6 +10,7 @@ from structlog.contextvars import bind_contextvars, clear_contextvars
 
 from src.pipeline.parse.factory import ParserFactory
 from src.pipeline.read.factory import ReaderFactory
+from src.pipeline.write.factory import WriterFactory
 from src.process.client import AsyncProductionHTTPClient
 from src.process.create_table import create_stage_tables, drop_stage_tables
 from src.sources.base import APIConfig, APIEndpointConfig, TableBatch
@@ -48,6 +49,7 @@ class PipelineRunner:
         self.parser = ParserFactory.create_parser(
             source=source, endpoint_config=endpoint_config
         )
+        self.writer = WriterFactory.create_writer(engine=self.engine)
         self.result: Optional[tuple[bool, str, Optional[str]]] = None
 
     async def read(self) -> AsyncGenerator[list[dict], None]:
@@ -61,7 +63,7 @@ class PipelineRunner:
             yield table_batches
 
     def write(self, table_batches: list[TableBatch]) -> None:
-        pass
+        self.writer.write(table_batches=table_batches)
 
     def audit(self) -> None:
         pass
@@ -75,12 +77,12 @@ class PipelineRunner:
     async def run(self):
         try:
             async for batch in self.read():
-                print(batch[0])
                 async for table_batches in self.parse(batch=batch):
                     await asyncio.to_thread(self.write, table_batches)
             await asyncio.to_thread(self.audit)
             await asyncio.to_thread(self.publish)
             self.result = (True, self.url, None)
+            self.cleanup()
         except Exception as e:
             logger.exception(e)
             self.result = (False, self.url, str(e))

@@ -1,4 +1,3 @@
-import re
 from typing import Type
 
 import structlog
@@ -18,14 +17,9 @@ from sqlmodel.main import get_sqlalchemy_type
 
 from src.settings import DevConfig, config
 from src.sources.base import APIConfig, APIEndpointConfig
-from src.utils import retry
+from src.utils import camel_to_snake, retry
 
 logger = structlog.getLogger(__name__)
-
-
-def camel_to_snake(name: str) -> str:
-    s1 = re.sub("(.)([A-Z][a-z]+)", r"\1_\2", name)
-    return re.sub("([a-z0-9])([A-Z])", r"\1_\2", s1).lower()
 
 
 @retry()

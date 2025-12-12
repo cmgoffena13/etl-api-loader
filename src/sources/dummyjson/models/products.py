@@ -5,7 +5,7 @@ from sqlmodel import Field, SQLModel
 
 
 class DummyJSONReviews(SQLModel, table=True):
-    product_id: int = Field(primary_key=True, alias="root.reviews[*].productId")
+    product_id: int = Field(primary_key=True, alias="root.id")
     reviewer_name: str = Field(primary_key=True, alias="root.reviews[*].reviewerName")
     rating: int = Field(alias="root.reviews[*].rating")
     comment: str = Field(alias="root.reviews[*].comment")

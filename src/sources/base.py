@@ -3,6 +3,8 @@ from typing import Any, Literal, Optional, Type
 from pydantic import BaseModel, Field, model_validator
 from sqlmodel import SQLModel
 
+from src.utils import camel_to_snake
+
 
 class TableBatch:
     def __init__(
@@ -13,6 +15,8 @@ class TableBatch:
         self.data_model = data_model
         self._records = []
         self.json_path_pattern = json_path_pattern
+        self._stage_table_name = f"stage_{camel_to_snake(data_model.__name__)}"
+        self._target_table_name = camel_to_snake(data_model.__name__)
 
     def add_record(self, record: dict):
         self._records.append(record)
@@ -23,6 +27,14 @@ class TableBatch:
     @property
     def records(self):
         return self._records
+
+    @property
+    def stage_table_name(self):
+        return self._stage_table_name
+
+    @property
+    def target_table_name(self):
+        return self._target_table_name
 
 
 class PaginationConfig(BaseModel):

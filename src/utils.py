@@ -1,5 +1,6 @@
 import logging
 import os
+import re
 import time
 from functools import wraps
 
@@ -89,3 +90,8 @@ def azure_secret_helper(value: str) -> str:
     except Exception as e:
         logger.error(f"Error fetching Azure secret {value}: {e}")
         raise
+
+
+def camel_to_snake(name: str) -> str:
+    s1 = re.sub("(.)([A-Z][a-z]+)", r"\1_\2", name)
+    return re.sub("([a-z0-9])([A-Z])", r"\1_\2", s1).lower()
