@@ -7,7 +7,6 @@ import psutil
 import structlog
 
 from src.pipeline.runner import PipelineRunner
-from src.process.client import AsyncProductionHTTPClient
 from src.process.create_table import create_production_tables
 from src.process.db import setup_db
 from src.sources.master import MASTER_SOURCE_REGISTRY

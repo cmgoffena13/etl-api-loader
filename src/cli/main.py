@@ -1,4 +1,5 @@
 import asyncio
+import logging
 from typing import Optional
 
 import structlog
@@ -29,6 +30,7 @@ def process(
             handler.console = console
             handler.show_time = False
             handler.show_path = False
+            handler.setLevel(logging.WARNING)
 
     processor = Processor()
     if source and endpoint:
@@ -53,7 +55,6 @@ def process(
 
 
 def main() -> None:
-    config.LOG_LEVEL = "WARNING"
     setup_logging()
     app()
 

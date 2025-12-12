@@ -21,7 +21,7 @@ class BaseAuditor(ABC):
         self.Session: sessionmaker[Session] = sessionmaker(bind=engine)
 
     @abstractmethod
-    def create_grain_validation_sql(primary_keys: list[str]) -> str:
+    def create_grain_validation_sql(self, primary_keys: list[str]) -> str:
         pass
 
     @retry()
@@ -45,14 +45,14 @@ class BaseAuditor(ABC):
         stage_table_name = f"stage_{camel_to_snake(data_model.__name__)}"
         with self.Session() as session:
             audit_sql = audit_sql.format(table=stage_table_name)
-            result = session.execute(audit_sql).fetchone()
+            result = session.execute(text(audit_sql)).fetchone()
             column_names = list(result._mapping.keys())
         for audit_name in column_names:
             value = result._mapping[audit_name]
             if value == 0:
                 failed_audits.append(audit_name)
         if failed_audits:
-            failed_audits_formatted = ", ".join(self.failed_audits)
+            failed_audits_formatted = ", ".join(failed_audits)
             raise AuditFailedError(
                 f"Audits failed for table {stage_table_name}: {failed_audits_formatted}"
             )
