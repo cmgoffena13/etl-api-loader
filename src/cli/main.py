@@ -39,7 +39,6 @@ def process(
 
         async def run():
             await processor.process_endpoint(source, endpoint)
-            await processor.close()
 
         asyncio.run(run())
     elif source:
@@ -47,7 +46,6 @@ def process(
 
         async def run():
             await processor.process_api(source)
-            await processor.close()
 
         asyncio.run(run())
     else:

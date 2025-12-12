@@ -47,6 +47,9 @@ class BaseWriter(ABC):
             batch[batch_index] = record
             batch_index += 1
             if batch_index == self.batch_size:
+                logger.info(
+                    f"Writing batch of {len(batch)} items to {stage_table_name}..."
+                )
                 with self.Session() as session:
                     try:
                         session.execute(insert_sql, batch)
@@ -58,6 +61,9 @@ class BaseWriter(ABC):
                 batch[:] = [None] * self.batch_size
                 batch_index = 0
         if batch_index > 0:
+            logger.info(
+                f"Writing final batch of {len(batch[:batch_index])} items to {stage_table_name}..."
+            )
             with self.Session() as session:
                 try:
                     session.execute(insert_sql, batch[:batch_index])

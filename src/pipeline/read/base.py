@@ -1,11 +1,15 @@
 from abc import ABC, abstractmethod
 from collections.abc import AsyncGenerator
 
+import structlog
+
 from src.pipeline.read.authentication.factory import AuthenticationStrategyFactory
 from src.pipeline.read.pagination.factory import PaginationStrategyFactory
 from src.process.client import AsyncProductionHTTPClient
 from src.settings import config
 from src.sources.base import APIConfig, APIEndpointConfig
+
+logger = structlog.getLogger(__name__)
 
 
 class BaseReader(ABC):
@@ -19,19 +23,6 @@ class BaseReader(ABC):
         self.pagination_strategy = PaginationStrategyFactory.create_strategy(
             source=self.source, client=self.client
         )
-
-    def _batch_items(self, items: list[dict]) -> AsyncGenerator[list[dict], None]:
-        batch = [None] * self.batch_size
-        batch_index = 0
-        for item in items:
-            batch[batch_index] = item
-            batch_index += 1
-            if batch_index == self.batch_size:
-                yield batch
-                batch[:] = [None] * self.batch_size
-                batch_index = 0
-        if batch_index > 0:
-            yield batch[:batch_index]
 
     @abstractmethod
     async def read(
