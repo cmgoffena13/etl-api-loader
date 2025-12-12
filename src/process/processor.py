@@ -5,6 +5,7 @@ from typing import Optional
 
 import psutil
 import structlog
+from opentelemetry import trace
 
 from src.pipeline.runner import PipelineRunner
 from src.process.create_table import create_production_tables
@@ -14,6 +15,8 @@ from src.sources.master import MASTER_SOURCE_REGISTRY
 
 logger = structlog.getLogger(__name__)
 
+tracer = trace.get_tracer(__name__)
+
 
 class Processor:
     def __init__(self):
@@ -22,12 +25,16 @@ class Processor:
         self.thread_pool = None
         self.api_queue = Queue()
         self.results: list[tuple[bool, str, Optional[str]]] = []
+        logger.info("Processor Initialized")
 
     async def process_endpoint(
         self, name: str, endpoint: str, api_config: APIConfig = None
     ) -> None:
-        if api_config is None:
-            source = MASTER_SOURCE_REGISTRY.get_source(name)
+        source = (
+            api_config
+            if api_config is not None
+            else MASTER_SOURCE_REGISTRY.get_source(name)
+        )
         if endpoint not in source.endpoints:
             available = ", ".join(source.endpoints.keys())
             raise ValueError(
@@ -36,15 +43,17 @@ class Processor:
             )
         endpoint_config = source.endpoints[endpoint]
         create_production_tables(endpoint_config, self.engine, self.metadata)
-        runner = PipelineRunner(
-            source=source,
-            endpoint=endpoint,
-            endpoint_config=endpoint_config,
-            engine=self.engine,
-            metadata=self.metadata,
-        )
-        result = await runner.run()
-        self.results.append(result)
+
+        with tracer.start_as_current_span(f"API: {name} - Endpoint: {endpoint}"):
+            runner = PipelineRunner(
+                source=source,
+                endpoint=endpoint,
+                endpoint_config=endpoint_config,
+                engine=self.engine,
+                metadata=self.metadata,
+            )
+            result = await runner.run()
+            self.results.append(result)
 
     async def process_api(self, name: str) -> None:
         source = MASTER_SOURCE_REGISTRY.get_source(name)
