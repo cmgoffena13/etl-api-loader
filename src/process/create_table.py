@@ -15,6 +15,7 @@ from sqlalchemy.orm import Session, sessionmaker
 from sqlmodel import SQLModel
 from sqlmodel.main import get_sqlalchemy_type
 
+from src.pipeline.db_utils import db_get_primary_keys
 from src.settings import DevConfig, config
 from src.sources.base import APIEndpointConfig
 from src.utils import camel_to_snake, retry
@@ -29,7 +30,7 @@ def _create_production_table(
     table_name = camel_to_snake(model.__name__)
     columns = []
     table_kwargs = {}
-    primary_keys = model.__table__.primary_key.columns.keys()
+    primary_keys = db_get_primary_keys(model)
     for name, field in model.model_fields.items():
         sa_type = get_sqlalchemy_type(field)
         if sa_type is DateTime:
