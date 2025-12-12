@@ -5,6 +5,7 @@ from src.tests.fixtures.test_models.json_parser_models import (
     TestListItem,
     TestProduct,
     TestProductWithList,
+    TestProductWithMaxLength,
     TestProductWithNested,
     TestReview,
     TestTransaction,
@@ -92,6 +93,20 @@ TEST_JSON_PARSER_CONFIG_DEEPLY_NESTED = APIConfig(
                 TestInvoice,
                 TestInvoiceLineItem,
                 TestTransaction,
+            ],
+        )
+    },
+)
+
+TEST_JSON_PARSER_CONFIG_MAX_LENGTH = APIConfig(
+    name="test_json_parser_max_length",
+    base_url="https://api.example.com/",
+    type="rest",
+    endpoints={
+        "products": APIEndpointConfig(
+            json_entrypoint="products",
+            tables=[
+                TestProductWithMaxLength,
             ],
         )
     },

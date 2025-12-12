@@ -17,9 +17,7 @@ logger = structlog.getLogger(__name__)
 
 class Processor:
     def __init__(self):
-        self.client = AsyncProductionHTTPClient()
         self.engine, self.metadata = setup_db()
-        self._closed = False
         self._thread_pool_shutdown = False
         self.thread_pool = None
         self.api_queue = Queue()
@@ -38,7 +36,6 @@ class Processor:
             source=source,
             endpoint=endpoint,
             endpoint_config=endpoint_config,
-            client=self.client,
             engine=self.engine,
             metadata=self.metadata,
         )
@@ -54,7 +51,6 @@ class Processor:
                 source=source,
                 endpoint=endpoint,
                 endpoint_config=endpoint_config,
-                client=self.client,
                 engine=self.engine,
                 metadata=self.metadata,
             )
@@ -91,19 +87,9 @@ class Processor:
             if not self._thread_pool_shutdown:
                 self.thread_pool.shutdown(wait=True)
                 self._thread_pool_shutdown = True
-            asyncio.run(self.close())
-
-    async def close(self):
-        if not self._closed:
-            await self.client.close()
-            self._closed = True
 
     def __del__(self):
         if not self._thread_pool_shutdown and self.thread_pool:
             logger.warning("Processor thread pool not shut down before deletion")
             self.thread_pool.shutdown(wait=True)
             self._thread_pool_shutdown = True
-        if not self._closed and self.client:
-            logger.warning("Processor client not closed before deletion")
-            self.client.close()
-            self._closed = True

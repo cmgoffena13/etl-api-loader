@@ -70,3 +70,9 @@ class TestTransaction(SQLModel, table=True):
     payment_method: str = Field(
         alias="root.invoice_line_items[*].transactions[*].payment_method"
     )
+
+
+class TestProductWithMaxLength(SQLModel, table=True):
+    id: int = Field(primary_key=True, alias="root.id")
+    name: str = Field(alias="root.name")
+    code: str = Field(max_length=3, alias="root.code")

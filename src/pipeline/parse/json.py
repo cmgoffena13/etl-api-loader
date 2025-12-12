@@ -1,12 +1,15 @@
 import json
 import re
-from typing import Any, AsyncGenerator
+from typing import Annotated, Any, AsyncGenerator
 
-from pydantic import TypeAdapter, ValidationError
+import structlog
+from pydantic import BeforeValidator, TypeAdapter, ValidationError
 
 from src.pipeline.db_utils import db_create_row_hash
 from src.pipeline.parse.base import BaseParser
 from src.sources.base import APIEndpointConfig, TableBatch
+
+logger = structlog.getLogger(__name__)
 
 
 class JSONParser(BaseParser):
@@ -14,7 +17,6 @@ class JSONParser(BaseParser):
         super().__init__(endpoint_config)
         self.table_batches: dict[str, TableBatch] = {}
         self.model_adapters: dict[str, TypeAdapter] = {}
-        self.errors = []
         self.indexed_cache = {}
         self.regex_pattern_cache = {}
         self.model_fields_cache = {}
@@ -101,7 +103,11 @@ class JSONParser(BaseParser):
             )
 
             self.table_batches[model_name] = table_batch
-            self.model_adapters[model_name] = TypeAdapter(model_cls)
+            # TypeAdapters do not like SQLModels
+            safe_model_cls = Annotated[
+                model_cls, BeforeValidator(model_cls.model_validate)
+            ]
+            self.model_adapters[model_name] = TypeAdapter(safe_model_cls)
 
     async def _parsing_path_matches(self, path: str, pattern: str) -> bool:
         if pattern not in self.regex_pattern_cache:
@@ -183,13 +189,8 @@ class JSONParser(BaseParser):
 
                     table_batch.add_record(record)
                 except ValidationError as e:
-                    self.errors.append(
-                        {
-                            "path": path,
-                            "model": model_name,
-                            "errors": e.errors(),
-                        }
-                    )
+                    logger.error(f"Validation error: {e}")
+                    raise e
 
     async def _parsing_walk(self, obj: Any, path: str = "root"):
         self.indexed_cache[path] = obj
@@ -217,6 +218,4 @@ class JSONParser(BaseParser):
         for record in batch:
             await self.clear_index_cache()
             await self._parsing_walk(record)
-        if self.errors:
-            raise ValueError(self.errors)
         yield list(self.table_batches.values())

@@ -1,9 +1,12 @@
 import pytest
+from pydantic import ValidationError
+from pydantic_extra_types.pendulum_dt import DateTime
 
 from src.pipeline.parse.json import JSONParser
 from src.tests.fixtures.test_configs.json_parser_configs import (
     TEST_JSON_PARSER_CONFIG_DEEPLY_NESTED,
     TEST_JSON_PARSER_CONFIG_LIST_ROOT,
+    TEST_JSON_PARSER_CONFIG_MAX_LENGTH,
     TEST_JSON_PARSER_CONFIG_MULTIPLE_TABLES,
     TEST_JSON_PARSER_CONFIG_NESTED,
     TEST_JSON_PARSER_CONFIG_SIMPLE,
@@ -58,7 +61,12 @@ async def test_json_parser_nested_structure():
     assert table_batches[0].records[0]["id"] == 1
     assert table_batches[0].records[0]["dimensions_width"] == 10.5
     assert table_batches[0].records[0]["dimensions_height"] == 20.0
-    assert table_batches[0].records[0]["meta_created_at"] == "2024-01-01T00:00:00Z"
+    # DateTime field is now properly parsed into DateTime object
+    assert isinstance(table_batches[0].records[0]["meta_created_at"], DateTime)
+    assert (
+        str(table_batches[0].records[0]["meta_created_at"])
+        == "2024-01-01 00:00:00+00:00"
+    )
     assert table_batches[0].records[1]["dimensions_width"] == 15.0
 
 
@@ -227,3 +235,31 @@ async def test_json_parser_deeply_nested():
     assert transactions_batch.records[3]["line_item_id"] == 3
     assert transactions_batch.records[3]["txn_id"] == 4
     assert transactions_batch.records[3]["payment_method"] == "bank_transfer"
+
+
+@pytest.mark.asyncio
+async def test_json_parser_max_length_validation_fails():
+    """Test that max_length constraint is enforced and validation fails when violated."""
+    endpoint_config = TEST_JSON_PARSER_CONFIG_MAX_LENGTH.endpoints["products"]
+    parser = JSONParser(endpoint_config=endpoint_config)
+
+    # Data with code longer than max_length=3
+    batch = [
+        {
+            "id": 1,
+            "name": "Product 1",
+            "code": "ABCD",  # 4 characters, should fail max_length=3
+        }
+    ]
+
+    with pytest.raises(ValidationError) as exc_info:
+        table_batches = []
+        async for result in parser.parse(batch):
+            table_batches = result
+
+    # Verify the error is about max_length
+    errors = exc_info.value.errors()
+    assert any(
+        error["type"] == "string_too_long" or "max_length" in str(error).lower()
+        for error in errors
+    )

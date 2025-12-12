@@ -24,7 +24,6 @@ class PipelineRunner:
         source: APIConfig,
         endpoint: str,
         endpoint_config: APIEndpointConfig,
-        client: AsyncProductionHTTPClient,
         engine: Engine,
         metadata: MetaData,
     ):
@@ -44,8 +43,9 @@ class PipelineRunner:
             base_url = source.base_url.rstrip("/") + "/"
             self.url = urljoin(base_url, self.endpoint.lstrip("/"))
 
-        self.client = client
-        self.reader = ReaderFactory.create_reader(source=source, client=client)
+        self.client = AsyncProductionHTTPClient()
+        self._client_closed = False
+        self.reader = ReaderFactory.create_reader(source=source, client=self.client)
         self.parser = ParserFactory.create_parser(
             source=source, endpoint_config=endpoint_config
         )
@@ -86,4 +86,8 @@ class PipelineRunner:
         except Exception as e:
             logger.exception(e)
             self.result = (False, self.url, str(e))
+        finally:
+            if not self._client_closed:
+                await self.client.close()
+                self._client_closed = True
         return self.result

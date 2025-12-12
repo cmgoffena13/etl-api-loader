@@ -84,7 +84,7 @@ class AsyncProductionHTTPClient:
         read_timeout: float = 10.0,
         write_timeout: float = 5.0,
         pool_timeout: float = 2.0,
-        max_connections: int = 50,
+        max_connections: int = 20,
         max_keepalive_connections: int = 20,
         keepalive_expiry: float = 30.0,
         max_attempts: int = 5,  # Total number of attempts (initial + retries)
