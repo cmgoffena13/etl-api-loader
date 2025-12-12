@@ -23,7 +23,6 @@ def process(
         None, "--endpoint", "-e", help="API Endpoint to process Ex. products"
     ),
 ) -> None:
-    config.LOG_LEVEL = "WARNING"
     root_logger = structlog.get_logger("src")
     for handler in root_logger.handlers:
         if isinstance(handler, RichHandler):
@@ -54,6 +53,7 @@ def process(
 
 
 def main() -> None:
+    config.LOG_LEVEL = "WARNING"
     setup_logging()
     app()
 
