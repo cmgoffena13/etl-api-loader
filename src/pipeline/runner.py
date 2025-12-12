@@ -8,6 +8,7 @@ from sqlalchemy import Engine, MetaData
 from sqlalchemy.orm import Session, sessionmaker
 from structlog.contextvars import bind_contextvars, clear_contextvars
 
+from src.pipeline.audit.factory import AuditorFactory
 from src.pipeline.parse.factory import ParserFactory
 from src.pipeline.read.factory import ReaderFactory
 from src.pipeline.write.factory import WriterFactory
@@ -50,6 +51,9 @@ class PipelineRunner:
             source=source, endpoint_config=endpoint_config
         )
         self.writer = WriterFactory.create_writer(engine=self.engine)
+        self.auditor = AuditorFactory.create_auditor(
+            endpoint_config=endpoint_config, engine=self.engine
+        )
         self.result: Optional[tuple[bool, str, Optional[str]]] = None
 
     async def read(self) -> AsyncGenerator[list[dict], None]:
@@ -66,7 +70,8 @@ class PipelineRunner:
         self.writer.write(table_batches=table_batches)
 
     def audit(self) -> None:
-        pass
+        self.auditor.audit_grain()
+        self.auditor.audit_data()
 
     def publish(self) -> None:
         pass
@@ -84,7 +89,7 @@ class PipelineRunner:
             self.result = (True, self.url, None)
             self.cleanup()
         except Exception as e:
-            logger.exception(e)
+            # logger.exception(e)
             self.result = (False, self.url, str(e))
         finally:
             if not self._client_closed:

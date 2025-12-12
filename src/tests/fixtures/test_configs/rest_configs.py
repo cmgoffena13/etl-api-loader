@@ -3,6 +3,7 @@ from src.sources.base import (
     APIEndpointConfig,
     NextUrlPaginationConfig,
     OffsetPaginationConfig,
+    TableConfig,
 )
 from src.tests.fixtures.test_models.rest_models import TestItem
 
@@ -14,7 +15,7 @@ TEST_REST_CONFIG_NO_PAGINATION = APIConfig(
         "items": APIEndpointConfig(
             json_entrypoint="items",
             tables=[
-                TestItem,
+                TableConfig(data_model=TestItem),
             ],
         )
     },
@@ -37,7 +38,7 @@ TEST_REST_CONFIG_WITH_OFFSET_PAGINATION = APIConfig(
         "items": APIEndpointConfig(
             json_entrypoint="items",
             tables=[
-                TestItem,
+                TableConfig(data_model=TestItem),
             ],
         )
     },
@@ -55,7 +56,7 @@ TEST_REST_CONFIG_WITH_NEXT_URL_PAGINATION = APIConfig(
         "items": APIEndpointConfig(
             json_entrypoint="results",
             tables=[
-                TestItem,
+                TableConfig(data_model=TestItem),
             ],
         )
     },

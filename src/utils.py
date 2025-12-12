@@ -10,6 +10,8 @@ from azure.keyvault.secrets import SecretClient
 from botocore.exceptions import ClientError
 from google.cloud import secretmanager
 
+from src.exception.base import CustomException
+
 logger = logging.getLogger(__name__)
 
 
@@ -22,6 +24,8 @@ def retry(attempts: int = 3, delay: float = 0.25, backoff: float = 2.0):
                 try:
                     return func(*args, **kwargs)
                 except Exception as e:
+                    if isinstance(e, CustomException):
+                        raise e
                     if index == attempts - 1:
                         raise e
                     logger.warning(

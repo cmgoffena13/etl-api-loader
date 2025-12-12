@@ -1,4 +1,4 @@
-from src.sources.base import APIConfig, APIEndpointConfig
+from src.sources.base import APIConfig, APIEndpointConfig, TableConfig
 from src.tests.fixtures.test_models.json_parser_models import (
     TestInvoice,
     TestInvoiceLineItem,
@@ -19,7 +19,7 @@ TEST_JSON_PARSER_CONFIG_SIMPLE = APIConfig(
         "products": APIEndpointConfig(
             json_entrypoint="products",
             tables=[
-                TestProduct,
+                TableConfig(data_model=TestProduct),
             ],
         )
     },
@@ -33,7 +33,7 @@ TEST_JSON_PARSER_CONFIG_NESTED = APIConfig(
         "products": APIEndpointConfig(
             json_entrypoint="products",
             tables=[
-                TestProductWithNested,
+                TableConfig(data_model=TestProductWithNested),
             ],
         )
     },
@@ -47,7 +47,7 @@ TEST_JSON_PARSER_CONFIG_WITH_LISTS = APIConfig(
         "products": APIEndpointConfig(
             json_entrypoint="products",
             tables=[
-                TestProductWithList,
+                TableConfig(data_model=TestProductWithList),
             ],
         )
     },
@@ -61,8 +61,8 @@ TEST_JSON_PARSER_CONFIG_MULTIPLE_TABLES = APIConfig(
         "products": APIEndpointConfig(
             json_entrypoint="products",
             tables=[
-                TestProduct,
-                TestReview,
+                TableConfig(data_model=TestProduct),
+                TableConfig(data_model=TestReview),
             ],
         )
     },
@@ -76,7 +76,7 @@ TEST_JSON_PARSER_CONFIG_LIST_ROOT = APIConfig(
         "posts": APIEndpointConfig(
             json_entrypoint=None,
             tables=[
-                TestListItem,
+                TableConfig(data_model=TestListItem),
             ],
         )
     },
@@ -90,9 +90,9 @@ TEST_JSON_PARSER_CONFIG_DEEPLY_NESTED = APIConfig(
         "invoices": APIEndpointConfig(
             json_entrypoint=None,
             tables=[
-                TestInvoice,
-                TestInvoiceLineItem,
-                TestTransaction,
+                TableConfig(data_model=TestInvoice),
+                TableConfig(data_model=TestInvoiceLineItem),
+                TableConfig(data_model=TestTransaction),
             ],
         )
     },
@@ -106,7 +106,7 @@ TEST_JSON_PARSER_CONFIG_MAX_LENGTH = APIConfig(
         "products": APIEndpointConfig(
             json_entrypoint="products",
             tables=[
-                TestProductWithMaxLength,
+                TableConfig(data_model=TestProductWithMaxLength),
             ],
         )
     },

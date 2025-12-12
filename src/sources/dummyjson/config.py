@@ -2,6 +2,7 @@ from src.sources.base import (
     APIConfig,
     APIEndpointConfig,
     OffsetPaginationConfig,
+    TableConfig,
 )
 from src.sources.dummyjson.models.products import DummyJSONProducts, DummyJSONReviews
 
@@ -22,8 +23,8 @@ DUMMYJSON_CONFIG = APIConfig(
         "products": APIEndpointConfig(
             json_entrypoint="products",
             tables=[
-                DummyJSONProducts,
-                DummyJSONReviews,
+                TableConfig(data_model=DummyJSONProducts),
+                TableConfig(data_model=DummyJSONReviews),
             ],
         )
     },

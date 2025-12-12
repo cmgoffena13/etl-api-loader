@@ -57,8 +57,8 @@ def create_production_tables(
     source: APIConfig, engine: Engine, metadata: MetaData
 ) -> None:
     for endpoint_config in source.endpoints.values():
-        for model in endpoint_config.tables:
-            _create_production_table(model, engine, metadata)
+        for table_config in endpoint_config.tables:
+            _create_production_table(table_config.data_model, engine, metadata)
 
 
 @retry()
@@ -85,8 +85,8 @@ def _create_stage_table(
 def create_stage_tables(
     endpoint_config: APIEndpointConfig, engine: Engine, metadata: MetaData
 ) -> None:
-    for model in endpoint_config.tables:
-        _create_stage_table(model, engine, metadata)
+    for table_config in endpoint_config.tables:
+        _create_stage_table(table_config.data_model, engine, metadata)
 
 
 @retry()
@@ -107,8 +107,8 @@ def drop_stage_tables(
     endpoint_config: APIEndpointConfig, Session: sessionmaker[Session]
 ) -> None:
     stage_table_names = []
-    for model in endpoint_config.tables:
-        table_name = camel_to_snake(model.__name__)
+    for table_config in endpoint_config.tables:
+        table_name = camel_to_snake(table_config.data_model.__name__)
         stage_table_names.append(f"stage_{table_name}")
     for stage_table_name in stage_table_names:
         _db_drop_stage_table(stage_table_name, Session)

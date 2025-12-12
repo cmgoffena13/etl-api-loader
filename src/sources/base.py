@@ -65,12 +65,17 @@ class NextUrlPaginationConfig(PaginationConfig):
     next_url_key: str = Field(default="next_url")
 
 
+class TableConfig(BaseModel):
+    data_model: Type[SQLModel]
+    audit_query: Optional[str] = None
+
+
 class APIEndpointConfig(BaseModel):
     json_entrypoint: Optional[str] = None
     body: Optional[dict[str, Any]] = None
     default_params: dict[str, Any] = Field(default_factory=dict)
     backoff_starting_delay: float = Field(default=1)
-    tables: list[Type[SQLModel]]
+    tables: list[TableConfig]
 
 
 class APIConfig(BaseModel):

@@ -3,6 +3,7 @@ from src.sources.base import (
     APIConfig,
     APIEndpointConfig,
     NextUrlPaginationConfig,
+    TableConfig,
 )
 from src.sources.polygon.models.tickers import PolygonTickers
 
@@ -21,7 +22,7 @@ POLYGON_CONFIG = APIConfig(
             json_entrypoint="results",
             backoff_starting_delay=60,
             tables=[
-                PolygonTickers,
+                TableConfig(data_model=PolygonTickers),
             ],
         )
     },

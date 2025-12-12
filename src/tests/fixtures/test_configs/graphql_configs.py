@@ -1,4 +1,4 @@
-from src.sources.base import APIConfig, APIEndpointConfig
+from src.sources.base import APIConfig, APIEndpointConfig, TableConfig
 from src.tests.fixtures.test_models.rest_models import TestItem
 
 TEST_GRAPHQL_CONFIG_NO_PAGINATION = APIConfig(
@@ -19,7 +19,7 @@ TEST_GRAPHQL_CONFIG_NO_PAGINATION = APIConfig(
                 """,
             },
             tables=[
-                TestItem,
+                TableConfig(data_model=TestItem),
             ],
         )
     },

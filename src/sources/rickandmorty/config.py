@@ -1,4 +1,4 @@
-from src.sources.base import APIConfig, APIEndpointConfig
+from src.sources.base import APIConfig, APIEndpointConfig, TableConfig
 from src.sources.rickandmorty.models.characters import RickAndMortyCharacters
 
 RICKANDMORTY_CONFIG = APIConfig(
@@ -33,7 +33,7 @@ RICKANDMORTY_CONFIG = APIConfig(
                 "variables": {"page": 1},
             },
             tables=[
-                RickAndMortyCharacters,
+                TableConfig(data_model=RickAndMortyCharacters),
             ],
         )
     },

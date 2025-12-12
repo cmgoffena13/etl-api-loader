@@ -1,4 +1,4 @@
-from src.sources.base import APIConfig, APIEndpointConfig
+from src.sources.base import APIConfig, APIEndpointConfig, TableConfig
 from src.sources.jsonplaceholder.models.posts import JSONPlaceholderPosts
 
 JSONPLACEHOLDER_CONFIG = APIConfig(
@@ -9,7 +9,7 @@ JSONPLACEHOLDER_CONFIG = APIConfig(
         "posts": APIEndpointConfig(
             json_entrypoint=None,
             tables=[
-                JSONPlaceholderPosts,
+                TableConfig(data_model=JSONPlaceholderPosts),
             ],
         )
     },
