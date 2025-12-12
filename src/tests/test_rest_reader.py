@@ -21,12 +21,11 @@ async def test_rest_reader_no_pagination_single_request(
     endpoint_config = TEST_REST_CONFIG_NO_PAGINATION.endpoints["items"]
     async for batch in reader.read(url=url, endpoint_config=endpoint_config):
         batches.append(list(batch))
-    assert len(batches) == 2
-    assert len(batches[0]) == 2
-    assert len(batches[1]) == 1
+    assert len(batches) == 1
+    assert len(batches[0]) == 3
     assert batches[0][0]["id"] == 1
     assert batches[0][1]["id"] == 2
-    assert batches[1][0]["id"] == 3
+    assert batches[0][2]["id"] == 3
 
 
 @pytest.mark.asyncio
@@ -45,13 +44,14 @@ async def test_rest_reader_with_offset_pagination(
     async for batch in reader.read(url=url, endpoint_config=endpoint_config):
         batches.append(list(batch))
 
-    assert len(batches) == 3
-    assert len(batches[0]) == 5
-    assert len(batches[1]) == 5
-    assert len(batches[2]) == 2
+    # With batch_size=10, 12 items total (5+5+2) should yield: 1 batch of 10, then 1 batch of 2
+    assert len(batches) == 2
+    assert len(batches[0]) == 10
+    assert len(batches[1]) == 2
     assert batches[0][0]["id"] == 1
-    assert batches[1][0]["id"] == 6
-    assert batches[2][0]["id"] == 11
+    assert batches[0][9]["id"] == 10
+    assert batches[1][0]["id"] == 11
+    assert batches[1][1]["id"] == 12
 
     requests = mock_rest_offset_pagination_responses.get_requests()
     assert len(requests) == 4
@@ -77,13 +77,14 @@ async def test_rest_reader_with_next_url_pagination(
     async for batch in reader.read(url=url, endpoint_config=endpoint_config):
         batches.append(list(batch))
 
-    assert len(batches) == 3
-    assert len(batches[0]) == 5
-    assert len(batches[1]) == 5
-    assert len(batches[2]) == 2
+    # With batch_size=10, 12 items total (5+5+2) should yield: 1 batch of 10, then 1 batch of 2
+    assert len(batches) == 2
+    assert len(batches[0]) == 10
+    assert len(batches[1]) == 2
     assert batches[0][0]["id"] == 1
-    assert batches[1][0]["id"] == 6
-    assert batches[2][0]["id"] == 11
+    assert batches[0][9]["id"] == 10
+    assert batches[1][0]["id"] == 11
+    assert batches[1][1]["id"] == 12
 
     requests = mock_rest_next_url_pagination_responses.get_requests()
     assert len(requests) == 3
