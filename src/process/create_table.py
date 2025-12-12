@@ -16,7 +16,7 @@ from sqlmodel import SQLModel
 from sqlmodel.main import get_sqlalchemy_type
 
 from src.settings import DevConfig, config
-from src.sources.base import APIConfig, APIEndpointConfig
+from src.sources.base import APIEndpointConfig
 from src.utils import camel_to_snake, retry
 
 logger = structlog.getLogger(__name__)
@@ -54,11 +54,10 @@ def _create_production_table(
 
 
 def create_production_tables(
-    source: APIConfig, engine: Engine, metadata: MetaData
+    endpoint_config: APIEndpointConfig, engine: Engine, metadata: MetaData
 ) -> None:
-    for endpoint_config in source.endpoints.values():
-        for table_config in endpoint_config.tables:
-            _create_production_table(table_config.data_model, engine, metadata)
+    for table_config in endpoint_config.tables:
+        _create_production_table(table_config.data_model, engine, metadata)
 
 
 @retry()

@@ -39,7 +39,7 @@ def process(
         )
 
         async def run():
-            await processor.process_endpoint(source, endpoint)
+            await processor.process_endpoint(source, endpoint, None)
 
         asyncio.run(run())
     elif source:

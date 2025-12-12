@@ -9,6 +9,7 @@ import structlog
 from src.pipeline.runner import PipelineRunner
 from src.process.create_table import create_production_tables
 from src.process.db import setup_db
+from src.sources.base import APIConfig
 from src.sources.master import MASTER_SOURCE_REGISTRY
 
 logger = structlog.getLogger(__name__)
@@ -22,8 +23,11 @@ class Processor:
         self.api_queue = Queue()
         self.results: list[tuple[bool, str, Optional[str]]] = []
 
-    async def process_endpoint(self, name: str, endpoint: str):
-        source = MASTER_SOURCE_REGISTRY.get_source(name)
+    async def process_endpoint(
+        self, name: str, endpoint: str, api_config: APIConfig = None
+    ) -> None:
+        if api_config is None:
+            source = MASTER_SOURCE_REGISTRY.get_source(name)
         if endpoint not in source.endpoints:
             available = ", ".join(source.endpoints.keys())
             raise ValueError(
@@ -31,6 +35,7 @@ class Processor:
                 f"Available endpoints: {available}"
             )
         endpoint_config = source.endpoints[endpoint]
+        create_production_tables(endpoint_config, self.engine, self.metadata)
         runner = PipelineRunner(
             source=source,
             endpoint=endpoint,
@@ -41,20 +46,11 @@ class Processor:
         result = await runner.run()
         self.results.append(result)
 
-    async def process_api(self, name: str):
+    async def process_api(self, name: str) -> None:
         source = MASTER_SOURCE_REGISTRY.get_source(name)
-        create_production_tables(source, self.engine, self.metadata)
         # Process Sequentially to respect API rate-limits
-        for endpoint, endpoint_config in source.endpoints.items():
-            runner = PipelineRunner(
-                source=source,
-                endpoint=endpoint,
-                endpoint_config=endpoint_config,
-                engine=self.engine,
-                metadata=self.metadata,
-            )
-            result = await runner.run()
-            self.results.append(result)
+        for endpoint in source.endpoints.keys():
+            await self.process_endpoint(name, endpoint, source)
 
     def _worker(self):
         async def worker_loop():
@@ -68,7 +64,7 @@ class Processor:
 
         return asyncio.run(worker_loop())
 
-    def process(self):
+    def process(self) -> None:
         self.thread_pool = ThreadPoolExecutor(
             max_workers=psutil.cpu_count(logical=False)
         )
