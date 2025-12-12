@@ -12,6 +12,17 @@ from src.sources.base import APIConfig, APIEndpointConfig, NextUrlPaginationConf
 logger = structlog.getLogger(__name__)
 
 
+def _get_nested_value(data: dict, key: str) -> str | None:
+    keys = key.split(".")
+    current = data
+    for k in keys:
+        if isinstance(current, dict) and k in current:
+            current = current[k]
+        else:
+            return None
+    return current if isinstance(current, str) else None
+
+
 class NextURLPaginationStrategy(BasePaginationStrategy):
     def __init__(
         self,
@@ -78,7 +89,7 @@ class NextURLPaginationStrategy(BasePaginationStrategy):
 
             yield items
 
-            next_url = response_data.get(self.next_url_key)
+            next_url = _get_nested_value(response_data, self.next_url_key)
             if not next_url:
                 logger.debug(
                     "No next_url found in response - stopping pagination",
