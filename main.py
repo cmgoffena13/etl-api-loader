@@ -1,14 +1,12 @@
-import asyncio
-
 from src.logging_conf import setup_logging
 from src.process.processor import Processor
 
 
-async def main():
+def main():
     setup_logging()
     processor = Processor()
-    await processor.process()
+    processor.process()
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    main()
