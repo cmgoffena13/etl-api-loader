@@ -33,6 +33,7 @@ class BaseAuditor(ABC):
         with self.Session() as session:
             result = session.execute(text(grain_sql)).fetchone()
             if result._mapping["grain_unique"] == 0:
+                logger.error(f"Grain {stage_table_name} is not unique")
                 raise GrainValidationError(f"Grain {stage_table_name} is not unique")
 
     def audit_grain(self):
@@ -53,6 +54,9 @@ class BaseAuditor(ABC):
                 failed_audits.append(audit_name)
         if failed_audits:
             failed_audits_formatted = ", ".join(failed_audits)
+            logger.error(
+                f"Audits failed for table {stage_table_name}: {failed_audits_formatted}"
+            )
             raise AuditFailedError(
                 f"Audits failed for table {stage_table_name}: {failed_audits_formatted}"
             )
