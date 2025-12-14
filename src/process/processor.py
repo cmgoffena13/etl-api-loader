@@ -93,7 +93,8 @@ class Processor:
                 self._thread_pool_shutdown = True
 
     def __del__(self):
-        if not self._thread_pool_shutdown and self.thread_pool:
-            logger.warning("Processor thread pool not shut down before deletion")
-            self.thread_pool.shutdown(wait=True)
-            self._thread_pool_shutdown = True
+        if hasattr(self, "_thread_pool_shutdown") and hasattr(self, "thread_pool"):
+            if not self._thread_pool_shutdown and self.thread_pool:
+                logger.warning("Processor thread pool not shut down before deletion")
+                self.thread_pool.shutdown(wait=True)
+                self._thread_pool_shutdown = True

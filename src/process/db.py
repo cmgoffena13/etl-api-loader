@@ -32,7 +32,7 @@ def setup_db():
     db_config = get_database_config()
 
     engine_kwargs = {
-        "url": db_config["sqlalchemy.url"],
+        "url": str(db_config["sqlalchemy.url"]),
         "echo": db_config["sqlalchemy.echo"],
         "future": db_config["sqlalchemy.future"],
         "connect_args": db_config.get("sqlalchemy.connect_args", {}),

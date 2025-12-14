@@ -1,15 +1,24 @@
 import os
+from enum import Enum
 from functools import lru_cache
 from pathlib import Path
 from typing import Optional
 
 import structlog
-from pydantic import model_validator
+from pydantic import AnyUrl, HttpUrl, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from src.utils import aws_secret_helper, azure_secret_helper, gcp_secret_helper
 
 logger = structlog.getLogger(__name__)
+
+
+class LogLevel(str, Enum):
+    DEBUG = "DEBUG"
+    INFO = "INFO"
+    WARNING = "WARNING"
+    ERROR = "ERROR"
+    CRITICAL = "CRITICAL"
 
 
 SUPPORTED_DATABASE_DRIVERS = {
@@ -58,20 +67,20 @@ class BaseConfig(BaseSettings):
 
 # Store all environment variables that can be accessed globally
 class GlobalConfig(BaseConfig):
-    LOG_LEVEL: str = "INFO"
+    LOG_LEVEL: LogLevel = "INFO"
     OTEL_PYTHON_LOG_CORRELATION: Optional[bool] = None
-    OPEN_TELEMETRY_TRACE_ENDPOINT: Optional[str] = None
-    OPEN_TELEMETRY_LOG_ENDPOINT: Optional[str] = None
+    OPEN_TELEMETRY_TRACE_ENDPOINT: Optional[HttpUrl] = None
+    OPEN_TELEMETRY_LOG_ENDPOINT: Optional[HttpUrl] = None
     OPEN_TELEMETRY_AUTHORIZATION_TOKEN: Optional[str] = None
     OPEN_TELEMETRY_FLAG: bool = False
 
     BATCH_SIZE: int = 10000
-    DATABASE_URL: Optional[str] = None
+    DATABASE_URL: Optional[AnyUrl] = None
 
     @property
     def DRIVERNAME(self) -> str:
         for drivername, dialect in SUPPORTED_DATABASE_DRIVERS.items():
-            if drivername in self.DATABASE_URL.lower():
+            if drivername in str(self.DATABASE_URL).lower():
                 return dialect.lower()
         raise ValueError(
             f"Unsupported database driver in DATABASE_URL: {self.DATABASE_URL}"
@@ -92,6 +101,8 @@ class GlobalConfig(BaseConfig):
     # GCP Secret Manager settings
     GOOGLE_APPLICATION_CREDENTIALS: Optional[str] = None
     GOOGLE_CLOUD_PROJECT: Optional[str] = None
+
+    WEBHOOK_URL: Optional[HttpUrl] = None
 
     # API Secrets
     POLYGON_API_KEY: Optional[str] = None

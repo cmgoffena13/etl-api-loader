@@ -90,8 +90,8 @@ class PipelineRunner:
                     await asyncio.to_thread(self.write, table_batches)
             await asyncio.to_thread(self.audit)
             await asyncio.to_thread(self.publish)
+            await asyncio.to_thread(self.cleanup())
             self.result = (True, self.url, None)
-            self.cleanup()
             logger.info(f"API Endpoint {self.url} processed successfully!")
         except Exception as e:
             # logger.exception(e)
