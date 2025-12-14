@@ -109,14 +109,14 @@ class GlobalConfig(BaseConfig):
 
 
 class DevConfig(GlobalConfig):
-    LOG_LEVEL: str = "DEBUG"  # Overrides the global LOG_LEVEL
+    LOG_LEVEL: LogLevel = "DEBUG"  # Overrides the global LOG_LEVEL
     OTEL_PYTHON_LOG_CORRELATION: bool = False
 
     model_config = SettingsConfigDict(env_prefix="DEV_")
 
 
 class TestConfig(GlobalConfig):
-    LOG_LEVEL: str = "DEBUG"
+    LOG_LEVEL: LogLevel = "DEBUG"
     OTEL_PYTHON_LOG_CORRELATION: bool = False
     BATCH_SIZE: int = 100
     DATABASE_URL: Optional[str] = "sqlite:///:memory:"
@@ -125,7 +125,7 @@ class TestConfig(GlobalConfig):
 
 
 class ProdConfig(GlobalConfig):
-    LOG_LEVEL: str = "WARNING"
+    LOG_LEVEL: LogLevel = "WARNING"
     OTEL_PYTHON_LOG_CORRELATION: bool = True
     OPEN_TELEMETRY_FLAG: bool = True
 
