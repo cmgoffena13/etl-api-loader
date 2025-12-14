@@ -1,8 +1,7 @@
 import os
-from enum import Enum
 from functools import lru_cache
 from pathlib import Path
-from typing import Optional
+from typing import Literal, Optional
 
 import structlog
 from pydantic import AnyUrl, HttpUrl, model_validator
@@ -13,14 +12,7 @@ from src.utils import aws_secret_helper, azure_secret_helper, gcp_secret_helper
 logger = structlog.getLogger(__name__)
 
 
-class LogLevel(str, Enum):
-    DEBUG = "DEBUG"
-    INFO = "INFO"
-    WARNING = "WARNING"
-    ERROR = "ERROR"
-    CRITICAL = "CRITICAL"
-
-
+LogLevel = Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
 SUPPORTED_DATABASE_DRIVERS = {
     "postgresql": "postgresql",
     "mysql": "mysql",

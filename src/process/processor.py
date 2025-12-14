@@ -7,6 +7,8 @@ import psutil
 import structlog
 from opentelemetry import trace
 
+from src.notify.factory import NotifierFactory
+from src.notify.webhook import AlertLevel
 from src.pipeline.runner import PipelineRunner
 from src.process.create_table import create_production_tables
 from src.process.db import setup_db
@@ -87,10 +89,41 @@ class Processor:
             ]
             for future in futures:
                 future.result()
+            self.results_summary()
         finally:
             if not self._thread_pool_shutdown:
                 self.thread_pool.shutdown(wait=True)
                 self._thread_pool_shutdown = True
+
+    def results_summary(self):
+        success_count = 0
+        failure_count = 0
+        endpoints_failed = {}
+        for result in self.results:
+            status, url, error_message = result
+            if status is True:
+                success_count += 1
+            elif status is False:
+                failure_count += 1
+                endpoints_failed[url] = error_message
+
+        logger.info(
+            f"Processing complete: {success_count} successful, {failure_count} failed"
+        )
+
+        if endpoints_failed:
+            failure_details = "\n".join(
+                f"• {endpoint_url}: {error_message}"
+                for endpoint_url, error_message in endpoints_failed.items()
+            )
+            message = f"\n\nFailed Endpoints:\n{failure_details}"
+            notifier = NotifierFactory.get_notifier("webhook")
+            webhook_notifier = notifier(
+                level=AlertLevel.ERROR,
+                title="API Processing Summary",
+                message=message,
+            )
+            webhook_notifier.notify()
 
     def __del__(self):
         if hasattr(self, "_thread_pool_shutdown") and hasattr(self, "thread_pool"):

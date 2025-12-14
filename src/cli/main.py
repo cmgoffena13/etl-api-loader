@@ -40,6 +40,7 @@ def process(
 
         async def run():
             await processor.process_endpoint(source, endpoint, None)
+            processor.results_summary()
 
         asyncio.run(run())
     elif source:
@@ -47,6 +48,7 @@ def process(
 
         async def run():
             await processor.process_api(source)
+            processor.results_summary()
 
         asyncio.run(run())
     else:
