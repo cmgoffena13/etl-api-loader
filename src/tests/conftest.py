@@ -11,6 +11,11 @@ from src.process.client import AsyncProductionHTTPClient
 from src.tests.fixtures.test_responses.graphql_no_pagination import (
     TEST_GRAPHQL_SINGLE_REQUEST_RESPONSE,
 )
+from src.tests.fixtures.test_responses.rest_cursor_pagination import (
+    TEST_REST_CURSOR_PAGINATION_PAGE_1_RESPONSE,
+    TEST_REST_CURSOR_PAGINATION_PAGE_2_RESPONSE,
+    TEST_REST_CURSOR_PAGINATION_PAGE_3_RESPONSE,
+)
 from src.tests.fixtures.test_responses.rest_next_url_pagination import (
     TEST_REST_NEXT_URL_PAGINATION_PAGE_1_RESPONSE,
     TEST_REST_NEXT_URL_PAGINATION_PAGE_2_RESPONSE,
@@ -84,6 +89,31 @@ def mock_rest_next_url_pagination_responses(httpx_mock: HTTPXMock):
         method="GET",
         url="https://api.example.com/items?page=3",
         json=TEST_REST_NEXT_URL_PAGINATION_PAGE_3_RESPONSE,
+    )
+    yield httpx_mock
+
+
+@pytest.fixture
+def mock_rest_cursor_pagination_responses(httpx_mock: HTTPXMock):
+    httpx_mock.add_response(
+        method="GET",
+        url="https://api.example.com/items?limit=5",
+        json=TEST_REST_CURSOR_PAGINATION_PAGE_1_RESPONSE,
+    )
+    httpx_mock.add_response(
+        method="GET",
+        url="https://api.example.com/items?limit=5&starting_after=item_5",
+        json=TEST_REST_CURSOR_PAGINATION_PAGE_2_RESPONSE,
+    )
+    httpx_mock.add_response(
+        method="GET",
+        url="https://api.example.com/items?limit=5&starting_after=item_10",
+        json=TEST_REST_CURSOR_PAGINATION_PAGE_3_RESPONSE,
+    )
+    httpx_mock.add_response(
+        method="GET",
+        url="https://api.example.com/items?limit=5&starting_after=item_12",
+        json={"data": []},
     )
     yield httpx_mock
 

@@ -3,6 +3,7 @@ import pytest
 from src.pipeline.read.rest import RESTReader
 from src.tests.fixtures.test_configs.rest_configs import (
     TEST_REST_CONFIG_NO_PAGINATION,
+    TEST_REST_CONFIG_WITH_CURSOR_PAGINATION,
     TEST_REST_CONFIG_WITH_NEXT_URL_PAGINATION,
     TEST_REST_CONFIG_WITH_OFFSET_PAGINATION,
 )
@@ -91,3 +92,37 @@ async def test_rest_reader_with_next_url_pagination(
     assert str(requests[0].url) == "https://api.example.com/items"
     assert str(requests[1].url) == "https://api.example.com/items?page=2"
     assert str(requests[2].url) == "https://api.example.com/items?page=3"
+
+
+@pytest.mark.asyncio
+async def test_rest_reader_with_cursor_pagination(
+    mock_rest_cursor_pagination_responses,
+    http_client,
+):
+    reader = RESTReader(
+        source=TEST_REST_CONFIG_WITH_CURSOR_PAGINATION, client=http_client
+    )
+    reader.batch_size = 10
+
+    batches = []
+    url = "https://api.example.com/items"
+    endpoint_config = TEST_REST_CONFIG_WITH_CURSOR_PAGINATION.endpoints["items"]
+    async for batch in reader.read(url=url, endpoint_config=endpoint_config):
+        batches.append(list(batch))
+
+    # With batch_size=10, 12 items total (5+5+2) should yield: 1 batch of 10, then 1 batch of 2
+    assert len(batches) == 2
+    assert len(batches[0]) == 10
+    assert len(batches[1]) == 2
+    assert batches[0][0]["id"] == "item_1"
+    assert batches[0][9]["id"] == "item_10"
+    assert batches[1][0]["id"] == "item_11"
+    assert batches[1][1]["id"] == "item_12"
+
+    requests = mock_rest_cursor_pagination_responses.get_requests()
+    assert len(requests) == 4
+    assert "limit=5" in str(requests[0].url)
+    assert "starting_after" not in str(requests[0].url)
+    assert "starting_after=item_5" in str(requests[1].url)
+    assert "starting_after=item_10" in str(requests[2].url)
+    assert "starting_after=item_12" in str(requests[3].url)
