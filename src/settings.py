@@ -98,6 +98,7 @@ class GlobalConfig(BaseConfig):
 
     # API Secrets
     POLYGON_API_KEY: Optional[str] = None
+    STRIPE_API_KEY: Optional[str] = None
 
 
 class DevConfig(GlobalConfig):

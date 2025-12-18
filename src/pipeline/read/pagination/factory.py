@@ -1,6 +1,7 @@
 from typing import Optional
 
 from src.pipeline.read.pagination.base import BasePaginationStrategy
+from src.pipeline.read.pagination.cursor import CursorPaginationStrategy
 from src.pipeline.read.pagination.next_url import NextURLPaginationStrategy
 from src.pipeline.read.pagination.offset import OffsetPaginationStrategy
 from src.process.client import AsyncProductionHTTPClient
@@ -11,6 +12,7 @@ class PaginationStrategyFactory:
     _strategies = {
         "offset": OffsetPaginationStrategy,
         "next_url": NextURLPaginationStrategy,
+        "cursor": CursorPaginationStrategy,
     }
 
     @classmethod

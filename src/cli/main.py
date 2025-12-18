@@ -9,7 +9,7 @@ from typer import Option, Typer
 
 from src.logging_conf import setup_logging
 from src.process.processor import Processor
-from src.settings import config
+from src.settings import DevConfig, config
 
 app = Typer(help="API Loader - ETL Pipeline for APIs")
 console = Console()
@@ -30,7 +30,10 @@ def process(
             handler.console = console
             handler.show_time = False
             handler.show_path = False
-            handler.setLevel(logging.WARNING)
+            if isinstance(config, DevConfig):
+                handler.setLevel(logging.DEBUG)
+            else:
+                handler.setLevel(logging.WARNING)
 
     processor = Processor()
     if source and endpoint:

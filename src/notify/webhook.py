@@ -71,7 +71,7 @@ class WebhookNotifier(BaseNotifier):
             raise ValueError("Webhook URL not configured")
 
         response = httpx.post(
-            self.webhook_url,
+            str(self.webhook_url),
             json=self.webhook_message,
             timeout=10.0,
         )

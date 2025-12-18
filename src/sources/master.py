@@ -3,8 +3,9 @@ from src.sources.jsonplaceholder.config import JSONPLACEHOLDER_CONFIG
 from src.sources.polygon.config import POLYGON_CONFIG
 from src.sources.registry import SourceRegistry
 from src.sources.rickandmorty.config import RICKANDMORTY_CONFIG
+from src.sources.stripe.config import STRIPE_CONFIG
 
 MASTER_SOURCE_REGISTRY = SourceRegistry()
 MASTER_SOURCE_REGISTRY.add_sources(
-    [JSONPLACEHOLDER_CONFIG, DUMMYJSON_CONFIG, RICKANDMORTY_CONFIG]
+    [JSONPLACEHOLDER_CONFIG, DUMMYJSON_CONFIG, RICKANDMORTY_CONFIG, STRIPE_CONFIG]
 )

@@ -1,4 +1,4 @@
-from typing import Type
+from typing import Type, get_args, get_origin
 
 import structlog
 from sqlalchemy import (
@@ -23,6 +23,16 @@ from src.utils import camel_to_snake, retry
 logger = structlog.getLogger(__name__)
 
 
+def _is_optional_type(annotation) -> bool:
+    """Check if a type annotation is Optional."""
+    origin = get_origin(annotation)
+    if origin is None:
+        return False
+    args = get_args(annotation)
+    allows_none = type(None) in args
+    return allows_none
+
+
 @retry()
 def _create_production_table(
     model: Type[SQLModel], engine: Engine, metadata: MetaData
@@ -35,7 +45,7 @@ def _create_production_table(
         sa_type = get_sqlalchemy_type(field)
         if sa_type is DateTime:
             sa_type = DateTime(timezone=True)
-        nullable = not field.is_required()
+        nullable = _is_optional_type(field.annotation) or not field.is_required()
         sa_column = Column(name, sa_type, nullable=nullable)
         columns.append(sa_column)
 
@@ -72,7 +82,7 @@ def _create_stage_table(
         sa_type = get_sqlalchemy_type(field)
         if sa_type is DateTime:
             sa_type = DateTime(timezone=True)
-        nullable = not field.is_required()
+        nullable = _is_optional_type(field.annotation) or not field.is_required()
         sa_column = Column(name, sa_type, nullable=nullable)
         columns.append(sa_column)
     columns.append(Column("etl_row_hash", LargeBinary(16), nullable=False))

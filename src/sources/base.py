@@ -61,6 +61,13 @@ class OffsetPaginationConfig(PaginationConfig):
         return self
 
 
+class CursorPaginationConfig(PaginationConfig):
+    cursor_param: str = Field(default="cursor")
+    next_cursor_key: str = Field(default="next_cursor")
+    limit_param: str = Field(default="limit")
+    limit: int = Field(default=100)
+
+
 class NextUrlPaginationConfig(PaginationConfig):
     next_url_key: str = Field(default="next_url")
 
@@ -86,7 +93,7 @@ class APIConfig(BaseModel):
     json_entrypoint: Optional[str] = None
     default_headers: dict[str, str] = Field(default_factory=dict)
     default_params: dict[str, Any] = Field(default_factory=dict)
-    pagination_strategy: Optional[Literal["offset", "next_url"]] = None
+    pagination_strategy: Optional[Literal["offset", "next_url", "cursor"]] = None
     pagination: Optional[PaginationConfig] = None
     authentication_strategy: Optional[Literal["auth", "bearer"]] = None
     authentication_params: dict[str, Any] = Field(default_factory=dict)
