@@ -101,9 +101,11 @@ class APIConfig(BaseModel):
 
     @model_validator(mode="after")
     def validate_pagination_config(self):
-        if self.pagination_strategy is not None and self.pagination is None:
+        if (self.pagination_strategy is not None and self.pagination is None) or (
+            self.pagination_strategy is None and self.pagination is not None
+        ):
             raise ValueError(
-                "pagination must be provided when pagination_strategy is set"
+                "pagination must be provided when pagination_strategy is set and vice versa"
             )
         return self
 
@@ -112,8 +114,10 @@ class APIConfig(BaseModel):
         if (
             self.authentication_strategy is not None
             and self.authentication_params == {}
+        ) or (
+            self.authentication_strategy is None and self.authentication_params != {}
         ):
             raise ValueError(
-                "authentication_params must be provided when authentication_strategy is set"
+                "authentication_params must be provided when authentication_strategy is set and vice versa"
             )
         return self
