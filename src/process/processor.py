@@ -10,7 +10,7 @@ from opentelemetry import trace
 from src.notify.factory import NotifierFactory
 from src.notify.webhook import AlertLevel
 from src.pipeline.runner import PipelineRunner
-from src.process.create_table import create_production_tables
+from src.process.create_table import create_production_tables, create_watermark_table
 from src.process.db import setup_db
 from src.sources.base import APIConfig
 from src.sources.master import MASTER_SOURCE_REGISTRY
@@ -23,6 +23,7 @@ tracer = trace.get_tracer(__name__)
 class Processor:
     def __init__(self):
         self.engine, self.metadata = setup_db()
+        create_watermark_table(self.engine, self.metadata)
         self._thread_pool_shutdown = False
         self.thread_pool = None
         self.api_queue = Queue()

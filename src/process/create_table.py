@@ -1,4 +1,4 @@
-from typing import Type, get_args, get_origin
+from typing import Type, get_args
 
 import structlog
 from sqlalchemy import (
@@ -8,6 +8,7 @@ from sqlalchemy import (
     LargeBinary,
     MetaData,
     PrimaryKeyConstraint,
+    String,
     Table,
     text,
 )
@@ -116,3 +117,18 @@ def drop_stage_tables(
         stage_table_names.append(f"stage_{table_name}")
     for stage_table_name in stage_table_names:
         _db_drop_stage_table(stage_table_name, Session)
+
+
+@retry()
+def create_watermark_table(engine: Engine, metadata: MetaData) -> None:
+    watermark_table_name = "api_watermark"
+    columns = [
+        Column("source_name", String(255), nullable=False),
+        Column("endpoint_name", String(255), nullable=False),
+        Column("watermark_value", String(255), nullable=False),
+    ]
+    primary_key = PrimaryKeyConstraint("source_name", "endpoint_name")
+    watermark_table = Table(watermark_table_name, metadata, *columns, primary_key)
+    if isinstance(config, DevConfig):
+        metadata.drop_all(engine, tables=[watermark_table])
+    metadata.create_all(engine, tables=[watermark_table])
