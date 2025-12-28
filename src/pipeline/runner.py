@@ -14,7 +14,7 @@ from src.pipeline.publish.factory import PublisherFactory
 from src.pipeline.read.factory import ReaderFactory
 from src.pipeline.write.factory import WriterFactory
 from src.process.client import AsyncProductionHTTPClient
-from src.process.create_table import create_stage_tables, drop_stage_tables
+from src.process.tables import create_stage_tables, drop_stage_tables
 from src.sources.base import APIConfig, APIEndpointConfig, TableBatch
 
 logger = structlog.getLogger(__name__)

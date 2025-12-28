@@ -10,6 +10,7 @@ from sqlalchemy import (
     PrimaryKeyConstraint,
     String,
     Table,
+    inspect,
     text,
 )
 from sqlalchemy.orm import Session, sessionmaker
@@ -132,3 +133,58 @@ def create_watermark_table(engine: Engine, metadata: MetaData) -> None:
     if isinstance(config, DevConfig):
         metadata.drop_all(engine, tables=[watermark_table])
     metadata.create_all(engine, tables=[watermark_table])
+
+
+@retry()
+def evolve_table_schema(
+    stage_table_name: str, target_table_name: str, engine: Engine
+) -> None:
+    inspector = inspect(engine)
+
+    if not inspector.has_table(stage_table_name) or not inspector.has_table(
+        target_table_name
+    ):
+        logger.warning(
+            f"Stage or target table does not exist, skipping schema evolution: {stage_table_name} or {target_table_name}"
+        )
+        return
+
+    stage_columns = {
+        col["name"]: col for col in inspector.get_columns(stage_table_name)
+    }
+    target_columns = {
+        col["name"]: col for col in inspector.get_columns(target_table_name)
+    }
+
+    missing_columns = set(stage_columns.keys()) - set(target_columns.keys())
+
+    if not missing_columns:
+        logger.debug(f"No schema evolution needed for {target_table_name}")
+        return
+
+    logger.info(
+        f"Evolving {target_table_name}: adding {len(missing_columns)} column(s): {', '.join(missing_columns)}"
+    )
+
+    drivername = engine.dialect.name
+    add_column_keyword = "ADD COLUMN" if drivername != "mssql" else "ADD"
+
+    with engine.begin() as conn:
+        for col_name in missing_columns:
+            stage_col_info = stage_columns[col_name]
+            col_type = stage_col_info["type"]
+            type_str = col_type.compile(engine.dialect)
+            nullable_str = "" if stage_col_info.get("nullable", True) else " NOT NULL"
+
+            alter_sql = f"ALTER TABLE {target_table_name} {add_column_keyword} {col_name} {type_str}{nullable_str}"
+
+            try:
+                conn.execute(text(alter_sql))
+                logger.info(
+                    f"Added column {col_name} ({type_str}) to {target_table_name}"
+                )
+            except Exception as e:
+                logger.error(
+                    f"Error adding column {col_name} to {target_table_name}: {e}"
+                )
+                raise

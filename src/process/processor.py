@@ -10,8 +10,8 @@ from opentelemetry import trace
 from src.notify.factory import NotifierFactory
 from src.notify.webhook import AlertLevel
 from src.pipeline.runner import PipelineRunner
-from src.process.create_table import create_production_tables, create_watermark_table
 from src.process.db import setup_db
+from src.process.tables import create_production_tables, create_watermark_table
 from src.sources.base import APIConfig
 from src.sources.master import MASTER_SOURCE_REGISTRY
 
