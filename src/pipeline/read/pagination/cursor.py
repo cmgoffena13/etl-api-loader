@@ -86,13 +86,7 @@ class CursorPaginationStrategy(BasePaginationStrategy):
         params[self.limit_param] = self.limit
         method_function = getattr(self.client, request.method.lower())
         url = str(request.url.copy_with(query=None))
-        logger.debug(
-            "Fetching paginated page",
-            url=url,
-            method=request.method,
-            params=params,
-            cursor=cursor,
-        )
+        logger.debug(f"Fetching paginated page, url: {url}, cursor: {cursor}")
         try:
             response = await method_function(
                 url=url,
@@ -101,18 +95,13 @@ class CursorPaginationStrategy(BasePaginationStrategy):
                 params=params,
             )
             logger.debug(
-                "Received response",
-                status_code=response.status_code,
-                url=str(response.url),
+                f"Received response {response.status_code}",
             )
             response.raise_for_status()
         except httpx.HTTPStatusError as e:
             if e.response.status_code == 400:
                 logger.debug(
-                    "400 Bad Request - stopping pagination",
-                    url=str(e.request.url),
-                    cursor=cursor,
-                    response_text=e.response.text[:200] if e.response.text else None,
+                    "400 Bad Request - stopping pagination, url: {str(e.request.url)}, cursor: {cursor}"
                 )
                 return None
             raise
@@ -129,11 +118,7 @@ class CursorPaginationStrategy(BasePaginationStrategy):
                 self.source_name, self.endpoint_name, self.Session
             )
             if watermark:
-                logger.info(
-                    f"Using watermark to get next cursor: {watermark}",
-                    source=self.source_name,
-                    endpoint=self.endpoint_name,
-                )
+                logger.info(f"Using watermark to get next cursor: {watermark}")
                 response_data = await self._fetch_cursor(
                     request=request, cursor=watermark, endpoint_config=endpoint_config
                 )
@@ -163,13 +148,12 @@ class CursorPaginationStrategy(BasePaginationStrategy):
             next_cursor = _extract_cursor_value(response_data, self.next_cursor_key)
             if not next_cursor:
                 logger.debug(
-                    "No next_cursor found in response - stopping pagination",
-                    cursor=cursor,
+                    f"No next_cursor found in response - stopping pagination, cursor: {cursor}"
                 )
                 break
 
             cursor = next_cursor
-            logger.debug("Using next_cursor from response", next_cursor=next_cursor)
+            logger.debug(f"Using next_cursor from response, next_cursor: {next_cursor}")
 
         if endpoint_config.incremental and cursor:
             set_watermark(self.source_name, self.endpoint_name, cursor, self.Session)

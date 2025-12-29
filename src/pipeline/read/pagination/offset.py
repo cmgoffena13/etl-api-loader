@@ -58,13 +58,7 @@ class OffsetPaginationStrategy(BasePaginationStrategy):
             params[self.limit_param] = self.limit
             method_function = getattr(self.client, request.method.lower())
             url = str(request.url.copy_with(query=None))
-            logger.debug(
-                "Fetching paginated page",
-                url=url,
-                method=request.method,
-                params=params,
-                offset=offset,
-            )
+            logger.debug(f"Fetching paginated page for url: {url}, offset: {offset}")
             try:
                 response = await method_function(
                     url=url,
@@ -73,20 +67,13 @@ class OffsetPaginationStrategy(BasePaginationStrategy):
                     params=params,
                 )
                 logger.debug(
-                    "Received response",
-                    status_code=response.status_code,
-                    url=str(response.url),
+                    f"Received response code: {response.status_code}",
                 )
                 response.raise_for_status()
             except httpx.HTTPStatusError as e:
                 if e.response.status_code == 400:
                     logger.debug(
-                        "400 Bad Request - stopping pagination",
-                        url=str(e.request.url),
-                        offset=offset,
-                        response_text=e.response.text[:200]
-                        if e.response.text
-                        else None,
+                        f"400 Bad Request - stopping pagination, url: {str(e.request.url), offset: {offset}}",
                     )
                     return None
                 raise
@@ -106,28 +93,24 @@ class OffsetPaginationStrategy(BasePaginationStrategy):
             if watermark:
                 try:
                     watermark_offset = int(watermark)
-                    logger.info(
-                        f"Using watermark to get next offset: {watermark_offset}",
-                        source=self.source_name,
-                        endpoint=self.endpoint_name,
-                    )
-                    response_data = await self._fetch_offset(
-                        request=request,
-                        offset=watermark_offset,
-                        endpoint_config=endpoint_config,
-                    )
-                    next_offset = response_data.get(self.next_offset_key)
-                    if next_offset:
-                        offset = next_offset
-                    else:
-                        logger.debug(
-                            f"No new data starting from watermark {watermark} - stopping pagination"
-                        )
-                        return
                 except ValueError:
                     raise Exception(
                         f"Watermark value '{watermark}' is not a valid integer"
                     )
+                logger.info(f"Using watermark to get next offset: {watermark_offset}")
+                response_data = await self._fetch_offset(
+                    request=request,
+                    offset=watermark_offset,
+                    endpoint_config=endpoint_config,
+                )
+                next_offset = response_data.get(self.next_offset_key)
+                if next_offset:
+                    offset = next_offset
+                else:
+                    logger.debug(
+                        f"No new data starting from watermark {watermark} - stopping pagination"
+                    )
+                    return
 
         if self.use_next_offset:
             while True:
@@ -149,24 +132,19 @@ class OffsetPaginationStrategy(BasePaginationStrategy):
                 next_offset = response_data.get(self.next_offset_key)
                 if next_offset is None:
                     logger.debug(
-                        "No next_offset found in response - stopping pagination",
-                        offset=offset,
+                        f"No next_offset found in response - stopping pagination, offset: {offset}"
                     )
+                    if endpoint_config.incremental:
+                        set_watermark(
+                            self.source_name,
+                            self.endpoint_name,
+                            str(next_offset),
+                            self.Session,
+                        )
                     break
 
-                if endpoint_config.incremental:
-                    set_watermark(
-                        self.source_name,
-                        self.endpoint_name,
-                        str(next_offset),
-                        self.Session,
-                    )
-
                 offset = next_offset
-                logger.debug(
-                    "Using next_offset from response",
-                    next_offset=next_offset,
-                )
+                logger.debug(f"Using next_offset from response: {next_offset}")
         else:
             highest_next_offset = offset
             while True:

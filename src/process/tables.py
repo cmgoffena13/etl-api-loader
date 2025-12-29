@@ -133,8 +133,6 @@ def create_watermark_table(engine: Engine, metadata: MetaData) -> None:
     ]
     primary_key = PrimaryKeyConstraint("source_name", "endpoint_name")
     watermark_table = Table(watermark_table_name, metadata, *columns, primary_key)
-    if isinstance(config, DevConfig):
-        metadata.drop_all(engine, tables=[watermark_table])
     metadata.create_all(engine, tables=[watermark_table])
 
 

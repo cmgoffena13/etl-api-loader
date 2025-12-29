@@ -1,5 +1,6 @@
 from typing import Optional
 
+import structlog
 from sqlalchemy.orm import Session, sessionmaker
 
 from src.pipeline.read.pagination.base import BasePaginationStrategy
@@ -8,6 +9,8 @@ from src.pipeline.read.pagination.next_url import NextURLPaginationStrategy
 from src.pipeline.read.pagination.offset import OffsetPaginationStrategy
 from src.process.client import AsyncProductionHTTPClient
 from src.sources.base import APIConfig
+
+logger = structlog.getLogger(__name__)
 
 
 class PaginationStrategyFactory:
@@ -34,6 +37,11 @@ class PaginationStrategyFactory:
         if source.pagination_strategy is None:
             return None
         try:
+            logger.info(
+                f"Creating pagination strategy: {source.pagination_strategy}",
+                source=source_name,
+                endpoint=endpoint_name,
+            )
             strategy = cls._strategies[source.pagination_strategy]
             return strategy(
                 source=source,

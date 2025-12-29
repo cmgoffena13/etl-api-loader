@@ -17,9 +17,11 @@ POLYGON_CONFIG = APIConfig(
     pagination=NextUrlPaginationConfig(
         next_url_key="next_url",
     ),
+    default_params={"limit": 1000},
     endpoints={
         "tickers": APIEndpointConfig(
             json_entrypoint="results",
+            incremental=True,
             backoff_starting_delay=60,
             tables=[
                 TableConfig(data_model=PolygonTickers),

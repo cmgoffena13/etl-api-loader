@@ -11,6 +11,8 @@ logger = structlog.getLogger(__name__)
 def get_watermark(
     source_name: str, endpoint_name: str, Session: sessionmaker[Session]
 ) -> Optional[str]:
+    logger.info(f"Getting watermark for {source_name}/{endpoint_name}")
+    watermark = None
     with Session() as session:
         result = session.execute(
             text(
@@ -19,8 +21,12 @@ def get_watermark(
             {"source_name": source_name, "endpoint_name": endpoint_name},
         ).first()
         if result:
-            return result[0]
-        return None
+            watermark = result[0]
+        else:
+            logger.warning(
+                f"No watermark value found for {source_name}/{endpoint_name}"
+            )
+        return watermark
 
 
 def set_watermark(
@@ -31,7 +37,7 @@ def set_watermark(
 ) -> None:
     with Session() as session:
         try:
-            check_result = session.execute(
+            exists = session.execute(
                 text(
                     "SELECT 1 FROM api_watermark WHERE source_name = :source_name AND endpoint_name = :endpoint_name"
                 ),
@@ -39,37 +45,31 @@ def set_watermark(
             ).first()
 
             now = pendulum.now("UTC")
-            if check_result:
-                session.execute(
-                    text(
-                        """
-                        UPDATE api_watermark 
-                        SET watermark_attempted = :watermark_attempted, etl_updated_at = :etl_updated_at
-                        WHERE source_name = :source_name AND endpoint_name = :endpoint_name
-                        """
-                    ),
-                    {
-                        "source_name": source_name,
-                        "endpoint_name": endpoint_name,
-                        "watermark_attempted": watermark_value,
-                        "etl_updated_at": now,
-                    },
-                )
+            if exists:
+                sql = """
+                    UPDATE api_watermark 
+                    SET watermark_attempted = :watermark_attempted, etl_updated_at = :etl_updated_at
+                    WHERE source_name = :source_name AND endpoint_name = :endpoint_name
+                """
+                params = {
+                    "source_name": source_name,
+                    "endpoint_name": endpoint_name,
+                    "watermark_attempted": watermark_value,
+                    "etl_updated_at": now,
+                }
             else:
-                session.execute(
-                    text(
-                        """
-                        INSERT INTO api_watermark (source_name, endpoint_name, watermark_attempted, etl_created_at)
-                        VALUES (:source_name, :endpoint_name, :watermark_attempted, :etl_created_at)
-                        """
-                    ),
-                    {
-                        "source_name": source_name,
-                        "endpoint_name": endpoint_name,
-                        "watermark_attempted": watermark_value,
-                        "etl_created_at": now,
-                    },
-                )
+                sql = """
+                    INSERT INTO api_watermark (source_name, endpoint_name, watermark_attempted, etl_created_at)
+                    VALUES (:source_name, :endpoint_name, :watermark_attempted, :etl_created_at)
+                """
+                params = {
+                    "source_name": source_name,
+                    "endpoint_name": endpoint_name,
+                    "watermark_attempted": watermark_value,
+                    "etl_created_at": now,
+                }
+
+            session.execute(text(sql), params)
             session.commit()
             logger.info(
                 f"Set watermark_attempted for {source_name}/{endpoint_name}: {watermark_value}"

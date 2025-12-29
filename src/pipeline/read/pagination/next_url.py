@@ -52,7 +52,7 @@ class NextURLPaginationStrategy(BasePaginationStrategy):
         self, url: str, headers: dict, endpoint_config: APIEndpointConfig
     ) -> dict | None:
         """Fetch a page using the provided URL."""
-        logger.debug("Fetching paginated page", url=url)
+        logger.debug(f"Fetching paginated page for url: {url}")
         try:
             response = await self.client.get(
                 url=url,
@@ -60,17 +60,13 @@ class NextURLPaginationStrategy(BasePaginationStrategy):
                 headers=headers,
             )
             logger.debug(
-                "Received response",
-                status_code=response.status_code,
-                url=str(response.url),
+                f"Received response code: {response.status_code}",
             )
             response.raise_for_status()
         except httpx.HTTPStatusError as e:
             if e.response.status_code == 400:
                 logger.debug(
-                    "400 Bad Request - stopping pagination",
-                    url=str(e.request.url),
-                    response_text=e.response.text[:200] if e.response.text else None,
+                    f"400 Bad Request - stopping pagination, url: {e.request.url}"
                 )
                 return None
             raise
@@ -91,11 +87,7 @@ class NextURLPaginationStrategy(BasePaginationStrategy):
                 self.source_name, self.endpoint_name, self.Session
             )
             if watermark:
-                logger.info(
-                    f"Using watermark to get next URL: {watermark}",
-                    source=self.source_name,
-                    endpoint=self.endpoint_name,
-                )
+                logger.info(f"Using watermark to get next URL: {watermark}")
                 response_data = await self._fetch_url(
                     url=watermark, headers=headers, endpoint_config=endpoint_config
                 )
@@ -103,7 +95,7 @@ class NextURLPaginationStrategy(BasePaginationStrategy):
                 if next_url:
                     current_url = next_url
                 else:
-                    logger.debug(
+                    logger.warning(
                         f"No new data starting from watermark {watermark} - stopping pagination"
                     )
                     return
@@ -125,15 +117,13 @@ class NextURLPaginationStrategy(BasePaginationStrategy):
             next_url = _get_nested_value(response_data, self.next_url_key)
             if not next_url:
                 logger.debug(
-                    "No next_url found in response - stopping pagination",
-                    current_url=current_url,
+                    f"No next_url found in response - stopping pagination: {current_url}",
                 )
+                if endpoint_config.incremental:
+                    set_watermark(
+                        self.source_name, self.endpoint_name, current_url, self.Session
+                    )
                 break
 
             current_url = next_url
-            logger.debug("Using next_url from response", next_url=next_url)
-
-        if endpoint_config.incremental and current_url:
-            set_watermark(
-                self.source_name, self.endpoint_name, current_url, self.Session
-            )
+            logger.debug(f"Using next_url from response: {next_url}")
