@@ -4,9 +4,11 @@ from collections.abc import AsyncGenerator
 import httpx
 import structlog
 from httpx import Request
+from sqlalchemy.orm import Session, sessionmaker
 
 from src.pipeline.read.json_utils import extract_items
 from src.pipeline.read.pagination.base import BasePaginationStrategy
+from src.pipeline.watermark import get_watermark, set_watermark
 from src.process.client import AsyncProductionHTTPClient
 from src.sources.base import APIConfig, APIEndpointConfig, OffsetPaginationConfig
 
@@ -18,8 +20,17 @@ class OffsetPaginationStrategy(BasePaginationStrategy):
         self,
         source: APIConfig,
         client: AsyncProductionHTTPClient,
+        Session: sessionmaker[Session],
+        source_name: str,
+        endpoint_name: str,
     ):
-        super().__init__(source=source, client=client)
+        super().__init__(
+            source=source,
+            client=client,
+            Session=Session,
+            source_name=source_name,
+            endpoint_name=endpoint_name,
+        )
         self.client = client
         if not isinstance(source.pagination, OffsetPaginationConfig):
             raise ValueError(
@@ -87,8 +98,38 @@ class OffsetPaginationStrategy(BasePaginationStrategy):
         request: Request,
         endpoint_config: APIEndpointConfig,
     ) -> AsyncGenerator[list[dict], None]:
+        offset = self.start_offset
+        if endpoint_config.incremental:
+            watermark = get_watermark(
+                self.source_name, self.endpoint_name, self.Session
+            )
+            if watermark:
+                try:
+                    watermark_offset = int(watermark)
+                    logger.info(
+                        f"Using watermark to get next offset: {watermark_offset}",
+                        source=self.source_name,
+                        endpoint=self.endpoint_name,
+                    )
+                    response_data = await self._fetch_offset(
+                        request=request,
+                        offset=watermark_offset,
+                        endpoint_config=endpoint_config,
+                    )
+                    next_offset = response_data.get(self.next_offset_key)
+                    if next_offset:
+                        offset = next_offset
+                    else:
+                        logger.debug(
+                            f"No new data starting from watermark {watermark} - stopping pagination"
+                        )
+                        return
+                except ValueError:
+                    raise Exception(
+                        f"Watermark value '{watermark}' is not a valid integer"
+                    )
+
         if self.use_next_offset:
-            offset = self.start_offset
             while True:
                 response_data = await self._fetch_offset(
                     request=request,
@@ -113,14 +154,21 @@ class OffsetPaginationStrategy(BasePaginationStrategy):
                     )
                     break
 
+                if endpoint_config.incremental:
+                    set_watermark(
+                        self.source_name,
+                        self.endpoint_name,
+                        str(next_offset),
+                        self.Session,
+                    )
+
                 offset = next_offset
                 logger.debug(
                     "Using next_offset from response",
                     next_offset=next_offset,
                 )
         else:
-            offset = self.start_offset
-
+            highest_next_offset = offset
             while True:
                 tasks = []
                 for index in range(self.max_concurrent):
@@ -136,15 +184,16 @@ class OffsetPaginationStrategy(BasePaginationStrategy):
                 results = await asyncio.gather(*tasks)
 
                 all_empty = True
-                for response_data in results:
+                for index, response_data in enumerate(results):
                     if not response_data:
                         continue
                     items = extract_items(response_data, endpoint_config, self.source)
                     if len(items) > 0:
                         all_empty = False
+                        request_offset = offset + (index * self.limit)
+                        next_offset = request_offset + len(items)
+                        highest_next_offset = max(highest_next_offset, next_offset)
                         yield items
-                    else:
-                        break
                 if all_empty:
                     break
 
@@ -161,3 +210,11 @@ class OffsetPaginationStrategy(BasePaginationStrategy):
                             break
                 if has_partial_page:
                     break
+
+            if endpoint_config.incremental:
+                set_watermark(
+                    self.source_name,
+                    self.endpoint_name,
+                    str(highest_next_offset),
+                    self.Session,
+                )

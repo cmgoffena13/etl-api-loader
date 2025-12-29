@@ -2,6 +2,7 @@ from collections.abc import AsyncGenerator
 
 import structlog
 from httpx import Request
+from sqlalchemy.orm import Session, sessionmaker
 
 from src.pipeline.read.base import BaseReader
 from src.pipeline.read.json_utils import extract_items
@@ -12,8 +13,21 @@ logger = structlog.getLogger(__name__)
 
 
 class RESTReader(BaseReader):
-    def __init__(self, source: APIConfig, client: AsyncProductionHTTPClient):
-        super().__init__(source=source, client=client)
+    def __init__(
+        self,
+        source: APIConfig,
+        client: AsyncProductionHTTPClient,
+        Session: sessionmaker[Session],
+        source_name: str,
+        endpoint_name: str,
+    ):
+        super().__init__(
+            source=source,
+            client=client,
+            Session=Session,
+            source_name=source_name,
+            endpoint_name=endpoint_name,
+        )
 
     async def read(
         self, url: str, endpoint_config: APIEndpointConfig

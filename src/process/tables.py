@@ -126,7 +126,10 @@ def create_watermark_table(engine: Engine, metadata: MetaData) -> None:
     columns = [
         Column("source_name", String(255), nullable=False),
         Column("endpoint_name", String(255), nullable=False),
-        Column("watermark_value", String(255), nullable=False),
+        Column("watermark_value", String(255), nullable=True),
+        Column("watermark_attempted", String(255), nullable=True),
+        Column("etl_created_at", DateTime(timezone=True), nullable=False),
+        Column("etl_updated_at", DateTime(timezone=True), nullable=True),
     ]
     primary_key = PrimaryKeyConstraint("source_name", "endpoint_name")
     watermark_table = Table(watermark_table_name, metadata, *columns, primary_key)

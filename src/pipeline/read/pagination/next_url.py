@@ -3,9 +3,11 @@ from collections.abc import AsyncGenerator
 import httpx
 import structlog
 from httpx import Request
+from sqlalchemy.orm import Session, sessionmaker
 
 from src.pipeline.read.json_utils import extract_items
 from src.pipeline.read.pagination.base import BasePaginationStrategy
+from src.pipeline.watermark import get_watermark, set_watermark
 from src.process.client import AsyncProductionHTTPClient
 from src.sources.base import APIConfig, APIEndpointConfig, NextUrlPaginationConfig
 
@@ -28,8 +30,17 @@ class NextURLPaginationStrategy(BasePaginationStrategy):
         self,
         source: APIConfig,
         client: AsyncProductionHTTPClient,
+        Session: sessionmaker[Session],
+        source_name: str,
+        endpoint_name: str,
     ):
-        super().__init__(source=source, client=client)
+        super().__init__(
+            source=source,
+            client=client,
+            Session=Session,
+            source_name=source_name,
+            endpoint_name=endpoint_name,
+        )
         self.client = client
         if not isinstance(source.pagination, NextUrlPaginationConfig):
             raise ValueError(
@@ -72,8 +83,30 @@ class NextURLPaginationStrategy(BasePaginationStrategy):
         endpoint_config: APIEndpointConfig,
     ) -> AsyncGenerator[list[dict], None]:
         """Paginate through pages using next_url from the response."""
-        current_url = str(request.url)
         headers = dict(request.headers)
+        current_url = str(request.url)
+
+        if endpoint_config.incremental:
+            watermark = get_watermark(
+                self.source_name, self.endpoint_name, self.Session
+            )
+            if watermark:
+                logger.info(
+                    f"Using watermark to get next URL: {watermark}",
+                    source=self.source_name,
+                    endpoint=self.endpoint_name,
+                )
+                response_data = await self._fetch_url(
+                    url=watermark, headers=headers, endpoint_config=endpoint_config
+                )
+                next_url = _get_nested_value(response_data, self.next_url_key)
+                if next_url:
+                    current_url = next_url
+                else:
+                    logger.debug(
+                        f"No new data starting from watermark {watermark} - stopping pagination"
+                    )
+                    return
 
         while True:
             response_data = await self._fetch_url(
@@ -99,3 +132,8 @@ class NextURLPaginationStrategy(BasePaginationStrategy):
 
             current_url = next_url
             logger.debug("Using next_url from response", next_url=next_url)
+
+        if endpoint_config.incremental and current_url:
+            set_watermark(
+                self.source_name, self.endpoint_name, current_url, self.Session
+            )

@@ -3,9 +3,11 @@ from collections.abc import AsyncGenerator
 import httpx
 import structlog
 from httpx import Request
+from sqlalchemy.orm import Session, sessionmaker
 
 from src.pipeline.read.json_utils import extract_items
 from src.pipeline.read.pagination.base import BasePaginationStrategy
+from src.pipeline.watermark import get_watermark, set_watermark
 from src.process.client import AsyncProductionHTTPClient
 from src.sources.base import APIConfig, APIEndpointConfig, CursorPaginationConfig
 
@@ -46,8 +48,21 @@ def _extract_cursor_value(data: dict, key: str) -> str | None:
 
 
 class CursorPaginationStrategy(BasePaginationStrategy):
-    def __init__(self, source: APIConfig, client: AsyncProductionHTTPClient):
-        super().__init__(source=source, client=client)
+    def __init__(
+        self,
+        source: APIConfig,
+        client: AsyncProductionHTTPClient,
+        Session: sessionmaker[Session],
+        source_name: str,
+        endpoint_name: str,
+    ):
+        super().__init__(
+            source=source,
+            client=client,
+            Session=Session,
+            source_name=source_name,
+            endpoint_name=endpoint_name,
+        )
         self.client = client
         if not isinstance(source.pagination, CursorPaginationConfig):
             raise ValueError(
@@ -109,6 +124,27 @@ class CursorPaginationStrategy(BasePaginationStrategy):
     ) -> AsyncGenerator[list[dict], None]:
         """Paginate through pages using cursor from the response."""
         cursor = None
+        if endpoint_config.incremental:
+            watermark = get_watermark(
+                self.source_name, self.endpoint_name, self.Session
+            )
+            if watermark:
+                logger.info(
+                    f"Using watermark to get next cursor: {watermark}",
+                    source=self.source_name,
+                    endpoint=self.endpoint_name,
+                )
+                response_data = await self._fetch_cursor(
+                    request=request, cursor=watermark, endpoint_config=endpoint_config
+                )
+                next_cursor = _extract_cursor_value(response_data, self.next_cursor_key)
+                if next_cursor:
+                    cursor = next_cursor
+                else:
+                    logger.debug(
+                        f"No new data starting from watermark {watermark} - stopping pagination"
+                    )
+                    return
 
         while True:
             response_data = await self._fetch_cursor(
@@ -134,3 +170,6 @@ class CursorPaginationStrategy(BasePaginationStrategy):
 
             cursor = next_cursor
             logger.debug("Using next_cursor from response", next_cursor=next_cursor)
+
+        if endpoint_config.incremental and cursor:
+            set_watermark(self.source_name, self.endpoint_name, cursor, self.Session)

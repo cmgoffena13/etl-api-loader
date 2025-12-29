@@ -82,6 +82,7 @@ class APIEndpointConfig(BaseModel):
     body: Optional[dict[str, Any]] = None
     default_params: dict[str, Any] = Field(default_factory=dict)
     backoff_starting_delay: float = Field(default=1)
+    incremental: bool = Field(default=False)
     tables: list[TableConfig]
 
 

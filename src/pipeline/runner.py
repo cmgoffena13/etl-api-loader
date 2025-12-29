@@ -12,6 +12,7 @@ from src.pipeline.audit.factory import AuditorFactory
 from src.pipeline.parse.factory import ParserFactory
 from src.pipeline.publish.factory import PublisherFactory
 from src.pipeline.read.factory import ReaderFactory
+from src.pipeline.watermark import commit_watermark
 from src.pipeline.write.factory import WriterFactory
 from src.process.client import AsyncProductionHTTPClient
 from src.process.tables import create_stage_tables, drop_stage_tables
@@ -47,7 +48,13 @@ class PipelineRunner:
 
         self.client = AsyncProductionHTTPClient()
         self._client_closed = False
-        self.reader = ReaderFactory.create_reader(source=source, client=self.client)
+        self.reader = ReaderFactory.create_reader(
+            source=source,
+            client=self.client,
+            Session=self.Session,
+            source_name=source.name,
+            endpoint_name=self.endpoint,
+        )
         self.parser = ParserFactory.create_parser(
             source=source, endpoint_config=endpoint_config
         )
@@ -79,6 +86,8 @@ class PipelineRunner:
 
     def publish(self) -> None:
         self.publisher.publish()
+        if self.endpoint_config.incremental:
+            commit_watermark(self.source.name, self.endpoint, self.Session)
 
     def cleanup(self) -> None:
         drop_stage_tables(self.endpoint_config, self.Session)
