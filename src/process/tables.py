@@ -150,15 +150,16 @@ def evolve_table_schema(model: Type[SQLModel], engine: Engine) -> None:
     inspector = inspect(engine)
 
     model_columns = _get_model_columns(model)
-    etl_columns = {"etl_row_hash", "etl_created_at", "etl_updated_at"}
+    model_columns_keys = set(model_columns.keys())
 
-    target_columns = {
-        col["name"]: col
+    etl_columns = {"etl_row_hash", "etl_created_at", "etl_updated_at"}
+    target_columns_keys = {
+        col["name"]
         for col in inspector.get_columns(target_table_name)
         if col["name"] not in etl_columns
     }
 
-    missing_columns = set(model_columns.keys()) - set(target_columns.keys())
+    missing_columns = model_columns_keys - target_columns_keys
 
     if not missing_columns:
         logger.debug(f"No schema evolution needed for {target_table_name}")
@@ -176,7 +177,7 @@ def evolve_table_schema(model: Type[SQLModel], engine: Engine) -> None:
             col_info = model_columns[col_name]
             col_type = col_info["type"]
             type_str = col_type.compile(engine.dialect)
-            nullable_str = "" if col_info.get("nullable", True) else " NOT NULL"
+            nullable_str = "" if col_info["nullable"] else " NOT NULL"
 
             alter_sql = f"ALTER TABLE {target_table_name} {add_column_keyword} {col_name} {type_str}{nullable_str}"
 
