@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session, sessionmaker
 from sqlmodel import SQLModel
 
 from src.pipeline.db_utils import db_get_primary_keys
+from src.process.tables import evolve_table_schema
 from src.sources.base import APIEndpointConfig
 from src.utils import camel_to_snake, retry
 
@@ -72,6 +73,9 @@ class BasePublisher(ABC):
     def _publish(self, data_model: Type[SQLModel]):
         now_iso = pendulum.now("UTC").isoformat()
         self.cache_variables(data_model, now_iso)
+
+        evolve_table_schema(data_model, self.engine)
+
         publish_sql = self.create_publish_sql(data_model, now_iso)
         stage_table_name = self.variable_cache[data_model.__name__]["stage_table_name"]
         target_table_name = self.variable_cache[data_model.__name__][

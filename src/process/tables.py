@@ -29,6 +29,21 @@ def _is_nullable(field) -> bool:
     return type(None) in get_args(field.annotation) or field.default is None
 
 
+def _get_model_columns(model: Type[SQLModel]) -> dict[str, dict]:
+    """Extract column information (type, nullable) from model fields."""
+    columns = {}
+    for name, field in model.model_fields.items():
+        sa_type = get_sqlalchemy_type(field)
+        if sa_type is DateTime:
+            sa_type = DateTime(timezone=True)
+        nullable = _is_nullable(field)
+        columns[name] = {
+            "type": sa_type,
+            "nullable": nullable,
+        }
+    return columns
+
+
 @retry()
 def _create_production_table(
     model: Type[SQLModel], engine: Engine, metadata: MetaData
@@ -37,12 +52,9 @@ def _create_production_table(
     columns = []
     table_kwargs = {}
     primary_keys = db_get_primary_keys(model)
-    for name, field in model.model_fields.items():
-        sa_type = get_sqlalchemy_type(field)
-        if sa_type is DateTime:
-            sa_type = DateTime(timezone=True)
-        nullable = _is_nullable(field)
-        sa_column = Column(name, sa_type, nullable=nullable)
+    model_columns = _get_model_columns(model)
+    for name, col_info in model_columns.items():
+        sa_column = Column(name, col_info["type"], nullable=col_info["nullable"])
         columns.append(sa_column)
 
     columns.append(Column("etl_row_hash", LargeBinary(16), nullable=False))
@@ -74,12 +86,9 @@ def _create_stage_table(
     snake_name = camel_to_snake(model.__name__)
     table_name = f"stage_{snake_name}"
     columns = []
-    for name, field in model.model_fields.items():
-        sa_type = get_sqlalchemy_type(field)
-        if sa_type is DateTime:
-            sa_type = DateTime(timezone=True)
-        nullable = _is_nullable(field)
-        sa_column = Column(name, sa_type, nullable=nullable)
+    model_columns = _get_model_columns(model)
+    for name, col_info in model_columns.items():
+        sa_column = Column(name, col_info["type"], nullable=col_info["nullable"])
         columns.append(sa_column)
     columns.append(Column("etl_row_hash", LargeBinary(16), nullable=False))
 
@@ -136,28 +145,20 @@ def create_watermark_table(engine: Engine, metadata: MetaData) -> None:
     metadata.create_all(engine, tables=[watermark_table])
 
 
-@retry()
-def evolve_table_schema(
-    stage_table_name: str, target_table_name: str, engine: Engine
-) -> None:
+def evolve_table_schema(model: Type[SQLModel], engine: Engine) -> None:
+    target_table_name = camel_to_snake(model.__name__)
     inspector = inspect(engine)
 
-    if not inspector.has_table(stage_table_name) or not inspector.has_table(
-        target_table_name
-    ):
-        logger.warning(
-            f"Stage or target table does not exist, skipping schema evolution: {stage_table_name} or {target_table_name}"
-        )
-        return
+    model_columns = _get_model_columns(model)
+    etl_columns = {"etl_row_hash", "etl_created_at", "etl_updated_at"}
 
-    stage_columns = {
-        col["name"]: col for col in inspector.get_columns(stage_table_name)
-    }
     target_columns = {
-        col["name"]: col for col in inspector.get_columns(target_table_name)
+        col["name"]: col
+        for col in inspector.get_columns(target_table_name)
+        if col["name"] not in etl_columns
     }
 
-    missing_columns = set(stage_columns.keys()) - set(target_columns.keys())
+    missing_columns = set(model_columns.keys()) - set(target_columns.keys())
 
     if not missing_columns:
         logger.debug(f"No schema evolution needed for {target_table_name}")
@@ -172,10 +173,10 @@ def evolve_table_schema(
 
     with engine.begin() as conn:
         for col_name in missing_columns:
-            stage_col_info = stage_columns[col_name]
-            col_type = stage_col_info["type"]
+            col_info = model_columns[col_name]
+            col_type = col_info["type"]
             type_str = col_type.compile(engine.dialect)
-            nullable_str = "" if stage_col_info.get("nullable", True) else " NOT NULL"
+            nullable_str = "" if col_info.get("nullable", True) else " NOT NULL"
 
             alter_sql = f"ALTER TABLE {target_table_name} {add_column_keyword} {col_name} {type_str}{nullable_str}"
 
