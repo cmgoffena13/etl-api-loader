@@ -5,9 +5,12 @@ import structlog
 from sqlalchemy import text
 from sqlalchemy.orm import Session, sessionmaker
 
+from src.utils import retry
+
 logger = structlog.getLogger(__name__)
 
 
+@retry()
 def get_watermark(
     source_name: str, endpoint_name: str, Session: sessionmaker[Session]
 ) -> Optional[str]:
@@ -29,6 +32,7 @@ def get_watermark(
         return watermark
 
 
+@retry()
 def set_watermark(
     source_name: str,
     endpoint_name: str,
@@ -80,6 +84,7 @@ def set_watermark(
             raise
 
 
+@retry()
 def commit_watermark(
     source_name: str,
     endpoint_name: str,
