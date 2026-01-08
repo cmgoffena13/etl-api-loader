@@ -1,6 +1,7 @@
 from collections.abc import AsyncGenerator
 
 import httpx
+import orjson
 import structlog
 from httpx import Request
 from sqlalchemy.orm import Session, sessionmaker
@@ -106,7 +107,7 @@ class CursorPaginationStrategy(BasePaginationStrategy):
                 return None
             raise
 
-        return response.json()
+        return orjson.loads(response.content)
 
     async def pages(
         self, request: Request, endpoint_config: APIEndpointConfig

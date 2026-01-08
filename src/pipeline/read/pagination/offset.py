@@ -2,6 +2,7 @@ import asyncio
 from collections.abc import AsyncGenerator
 
 import httpx
+import orjson
 import structlog
 from httpx import Request
 from sqlalchemy.orm import Session, sessionmaker
@@ -78,7 +79,7 @@ class OffsetPaginationStrategy(BasePaginationStrategy):
                     return None
                 raise
 
-            return response.json()
+            return orjson.loads(response.content)
 
     async def pages(
         self,

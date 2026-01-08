@@ -23,7 +23,7 @@ run:
 	uv run main.py
 
 postgres:
-	docker compose up -d postgres
+	docker compose up -d postgres --remove-orphans
 
 mysql:
-	docker compose up -d mysql
+	docker compose up -d mysql --remove-orphans

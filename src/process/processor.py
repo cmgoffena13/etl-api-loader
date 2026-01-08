@@ -1,10 +1,10 @@
-import asyncio
 from concurrent.futures import ThreadPoolExecutor
 from queue import Empty, Queue
 from typing import Optional
 
 import psutil
 import structlog
+import uvloop
 from opentelemetry import trace
 
 from src.notify.factory import NotifierFactory
@@ -74,7 +74,7 @@ class Processor:
                 except Empty:
                     break
 
-        return asyncio.run(worker_loop())
+        return uvloop.run(worker_loop())
 
     def process(self) -> None:
         self.thread_pool = ThreadPoolExecutor(
