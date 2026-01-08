@@ -1,8 +1,8 @@
-import asyncio
 import logging
 from typing import Optional
 
 import structlog
+import uvloop
 from rich.console import Console
 from rich.logging import RichHandler
 from typer import Option, Typer
@@ -45,7 +45,7 @@ def process(
             await processor.process_endpoint(source, endpoint, None)
             processor.results_summary()
 
-        asyncio.run(run())
+        uvloop.run(run())
     elif source:
         console.print(f"[green]Processing API {source}...[/green]")
 
@@ -53,7 +53,7 @@ def process(
             await processor.process_api(source)
             processor.results_summary()
 
-        asyncio.run(run())
+        uvloop.run(run())
     else:
         console.print("[green]Processing all APIs...[/green]")
         processor.process()
