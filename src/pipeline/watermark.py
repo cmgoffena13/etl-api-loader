@@ -19,7 +19,7 @@ def get_watermark(
     with Session() as session:
         result = session.execute(
             text(
-                "SELECT watermark_value FROM api_watermark WHERE source_name = :source_name AND endpoint_name = :endpoint_name"
+                "SELECT watermark_committed FROM api_watermark WHERE source_name = :source_name AND endpoint_name = :endpoint_name"
             ),
             {"source_name": source_name, "endpoint_name": endpoint_name},
         ).first()
@@ -52,34 +52,34 @@ def set_watermark(
             if exists:
                 sql = """
                     UPDATE api_watermark 
-                    SET watermark_attempted = :watermark_attempted, etl_updated_at = :etl_updated_at
+                    SET watermark_staged = :watermark_staged, etl_updated_at = :etl_updated_at
                     WHERE source_name = :source_name AND endpoint_name = :endpoint_name
                 """
                 params = {
                     "source_name": source_name,
                     "endpoint_name": endpoint_name,
-                    "watermark_attempted": watermark_value,
+                    "watermark_staged": watermark_value,
                     "etl_updated_at": now,
                 }
             else:
                 sql = """
-                    INSERT INTO api_watermark (source_name, endpoint_name, watermark_attempted, etl_created_at)
-                    VALUES (:source_name, :endpoint_name, :watermark_attempted, :etl_created_at)
+                    INSERT INTO api_watermark (source_name, endpoint_name, watermark_staged, etl_created_at)
+                    VALUES (:source_name, :endpoint_name, :watermark_staged, :etl_created_at)
                 """
                 params = {
                     "source_name": source_name,
                     "endpoint_name": endpoint_name,
-                    "watermark_attempted": watermark_value,
+                    "watermark_staged": watermark_value,
                     "etl_created_at": now,
                 }
 
             session.execute(text(sql), params)
             session.commit()
             logger.info(
-                f"Set watermark_attempted for {source_name}/{endpoint_name}: {watermark_value}"
+                f"Set watermark_staged for {source_name}/{endpoint_name}: {watermark_value}"
             )
         except Exception as e:
-            logger.exception(f"Error setting watermark_attempted: {e}")
+            logger.exception(f"Error setting watermark_staged: {e}")
             session.rollback()
             raise
 
@@ -96,9 +96,9 @@ def commit_watermark(
                 text(
                     """
                     UPDATE api_watermark 
-                    SET watermark_value = watermark_attempted, etl_updated_at = :etl_updated_at
+                    SET watermark_committed = watermark_staged, etl_updated_at = :etl_updated_at
                     WHERE source_name = :source_name AND endpoint_name = :endpoint_name
-                    AND watermark_attempted IS NOT NULL
+                    AND watermark_staged IS NOT NULL
                     """
                 ),
                 {
