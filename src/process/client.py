@@ -1,8 +1,9 @@
 import asyncio
 import random
-from typing import Optional
+from typing import Any, Optional
 
 import httpx
+import orjson
 import pendulum
 import structlog
 
@@ -152,12 +153,8 @@ class AsyncProductionHTTPClient:
                         )
                         await asyncio.sleep(backoff)
                         continue
-                    else:
-                        response.raise_for_status()
 
-                elif 400 <= response.status_code < 500:
-                    response.raise_for_status()
-
+                response.raise_for_status()
                 return response
 
             except HTTPX_EXCEPTIONS_KEYS as e:
@@ -176,21 +173,19 @@ class AsyncProductionHTTPClient:
             raise last_exception
         raise RuntimeError("Unexpected error in request_with_retry")
 
-    async def get(
-        self, url: str, backoff_starting_delay: float = 1, **kwargs
-    ) -> httpx.Response:
-        """GET request with retry logic."""
-        return await self.request_with_retry(
+    async def get(self, url: str, backoff_starting_delay: float = 1, **kwargs) -> Any:
+        """GET request with retry logic; returns JSON body as dict/list."""
+        response = await self.request_with_retry(
             "GET", url, backoff_starting_delay, **kwargs
         )
+        return orjson.loads(response.content)
 
-    async def post(
-        self, url: str, backoff_starting_delay: float = 1, **kwargs
-    ) -> httpx.Response:
-        """POST request with retry logic."""
-        return await self.request_with_retry(
+    async def post(self, url: str, backoff_starting_delay: float = 1, **kwargs) -> Any:
+        """POST request with retry logic; returns JSON body as dict/list."""
+        response = await self.request_with_retry(
             "POST", url, backoff_starting_delay, **kwargs
         )
+        return orjson.loads(response.content)
 
     async def put(
         self, url: str, backoff_starting_delay: float = 1, **kwargs

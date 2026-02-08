@@ -1,7 +1,6 @@
 from collections.abc import AsyncGenerator
 
 import httpx
-import orjson
 import structlog
 from httpx import Request
 from sqlalchemy.orm import Session, sessionmaker
@@ -55,15 +54,11 @@ class NextURLPaginationStrategy(BasePaginationStrategy):
         """Fetch a page using the provided URL."""
         logger.debug(f"Fetching paginated page for url: {url}")
         try:
-            response = await self.client.get(
+            return await self.client.get(
                 url=url,
                 backoff_starting_delay=endpoint_config.backoff_starting_delay,
                 headers=headers,
             )
-            logger.debug(
-                f"Received response code: {response.status_code}",
-            )
-            response.raise_for_status()
         except httpx.HTTPStatusError as e:
             if e.response.status_code == 400:
                 logger.debug(
@@ -71,8 +66,6 @@ class NextURLPaginationStrategy(BasePaginationStrategy):
                 )
                 return None
             raise
-
-        return orjson.loads(response.content)
 
     async def pages(
         self,

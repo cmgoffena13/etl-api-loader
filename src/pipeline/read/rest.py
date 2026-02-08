@@ -20,6 +20,7 @@ class RESTReader(BaseReader):
         Session: sessionmaker[Session],
         source_name: str,
         endpoint_name: str,
+        **kwargs,
     ):
         super().__init__(
             source=source,
@@ -27,6 +28,7 @@ class RESTReader(BaseReader):
             Session=Session,
             source_name=source_name,
             endpoint_name=endpoint_name,
+            **kwargs,
         )
 
     async def read(
@@ -60,15 +62,12 @@ class RESTReader(BaseReader):
                 logger.debug(f"Read final batch of {len(accumulated_items)} items")
                 yield accumulated_items
         else:
-            response = await self.client.get(
+            data = await self.client.get(
                 url,
                 backoff_starting_delay=endpoint_config.backoff_starting_delay,
                 headers=dict(request.headers),
                 params=default_params,
             )
-            response.raise_for_status()
-
-            data = response.json()
             items = extract_items(data, endpoint_config, self.source)
             if items:
                 logger.debug(f"Read single batch of {len(items)} items")

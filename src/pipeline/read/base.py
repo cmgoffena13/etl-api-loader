@@ -21,6 +21,7 @@ class BaseReader(ABC):
         Session: sessionmaker[Session],
         source_name: str,
         endpoint_name: str,
+        **kwargs,
     ):
         self.source = source
         self.client = client
@@ -37,6 +38,7 @@ class BaseReader(ABC):
             Session=self.Session,
             source_name=self.source_name,
             endpoint_name=self.endpoint_name,
+            **kwargs,
         )
 
     @abstractmethod

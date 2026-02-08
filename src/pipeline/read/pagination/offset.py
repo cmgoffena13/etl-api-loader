@@ -2,7 +2,6 @@ import asyncio
 from collections.abc import AsyncGenerator
 
 import httpx
-import orjson
 import structlog
 from httpx import Request
 from sqlalchemy.orm import Session, sessionmaker
@@ -55,20 +54,15 @@ class OffsetPaginationStrategy(BasePaginationStrategy):
             params = dict(request.url.params)
             params[self.offset_param] = offset
             params[self.limit_param] = self.limit
-            method_function = getattr(self.client, request.method.lower())
             url = str(request.url.copy_with(query=None))
             logger.debug(f"Fetching paginated page for url: {url}, offset: {offset}")
             try:
-                response = await method_function(
+                return await self.client.get(
                     url=url,
                     backoff_starting_delay=endpoint_config.backoff_starting_delay,
                     headers=request.headers,
                     params=params,
                 )
-                logger.debug(
-                    f"Received response code: {response.status_code}",
-                )
-                response.raise_for_status()
             except httpx.HTTPStatusError as e:
                 if e.response.status_code == 400:
                     logger.debug(
@@ -76,8 +70,6 @@ class OffsetPaginationStrategy(BasePaginationStrategy):
                     )
                     return None
                 raise
-
-            return orjson.loads(response.content)
 
     async def pages(
         self,

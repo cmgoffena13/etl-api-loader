@@ -2,7 +2,6 @@ from collections.abc import AsyncGenerator
 from typing import Any, Optional
 
 import httpx
-import orjson
 import structlog
 from httpx import Request
 from sqlalchemy.orm import Session, sessionmaker
@@ -83,29 +82,22 @@ class CursorPaginationStrategy(BasePaginationStrategy):
         if token:
             params[self.cursor_param] = token
         params[self.limit_param] = self.limit
-        method_function = getattr(self.client, request.method.lower())
         url = str(request.url.copy_with(query=None))
         logger.debug(f"Fetching paginated page, url: {url}, cursor: {cursor}")
         try:
-            response = await method_function(
+            return await self.client.get(
                 url=url,
                 backoff_starting_delay=endpoint_config.backoff_starting_delay,
                 headers=request.headers,
                 params=params,
             )
-            logger.debug(
-                f"Received response {response.status_code}",
-            )
-            response.raise_for_status()
         except httpx.HTTPStatusError as e:
             if e.response.status_code == 400:
                 logger.debug(
-                    "400 Bad Request - stopping pagination, url: {str(e.request.url)}, cursor: {cursor}"
+                    f"400 Bad Request - stopping pagination, url: {e.request.url}, cursor: {cursor}"
                 )
                 return None
             raise
-
-        return orjson.loads(response.content)
 
     async def pages(
         self, request: Request, endpoint_config: APIEndpointConfig

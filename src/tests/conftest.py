@@ -134,12 +134,19 @@ def mock_graphql_no_pagination_response(httpx_mock: HTTPXMock):
 
 @pytest.fixture
 def test_db():
+    """(engine, SessionFactory). query_input table is created and seeded for query-pagination tests."""
     engine, metadata = setup_db()
     create_watermark_table(engine, metadata)
-    SessionFactory = sessionmaker(bind=engine)
-    yield SessionFactory
     with engine.begin() as conn:
-        conn.execute(text("DELETE FROM api_watermark"))
+        conn.execute(text("CREATE TABLE IF NOT EXISTS query_input (ip TEXT)"))
+        conn.execute(text("DELETE FROM query_input"))
+        conn.execute(
+            text(
+                "INSERT INTO query_input (ip) VALUES ('1.2.3.4'), ('5.6.7.8'), ('9.10.11.12')"
+            )
+        )
+    SessionFactory = sessionmaker(bind=engine)
+    yield engine, SessionFactory
     engine.dispose()
 
 
@@ -245,4 +252,28 @@ def mock_rest_cursor_pagination_incremental_second_run(httpx_mock: HTTPXMock):
         url="https://api.example.com/items?limit=5&starting_after=item_12",
         json={"data": []},
     )
+    yield httpx_mock
+
+
+@pytest.fixture
+def mock_rest_query_pagination_path_responses(httpx_mock: HTTPXMock):
+    """Mock GETs for query pagination with value_in=path (path={ip}/geo/lookup)."""
+    for ip, item_id in [("1.2.3.4", 1), ("5.6.7.8", 2), ("9.10.11.12", 3)]:
+        httpx_mock.add_response(
+            method="GET",
+            url=f"https://api.example.com/{ip}/geo/lookup",
+            json={"result": {"id": item_id, "ip": ip}},
+        )
+    yield httpx_mock
+
+
+@pytest.fixture
+def mock_rest_query_pagination_params_responses(httpx_mock: HTTPXMock):
+    """Mock GETs for query pagination with value_in=params (?ip=...)."""
+    for ip, item_id in [("1.2.3.4", 1), ("5.6.7.8", 2), ("9.10.11.12", 3)]:
+        httpx_mock.add_response(
+            method="GET",
+            url=f"https://api.example.com/lookup?ip={ip}",
+            json={"result": {"id": item_id, "ip": ip}},
+        )
     yield httpx_mock

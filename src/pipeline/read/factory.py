@@ -1,3 +1,6 @@
+from typing import Optional
+
+from sqlalchemy import Engine
 from sqlalchemy.orm import Session, sessionmaker
 
 from src.pipeline.read.base import BaseReader
@@ -22,7 +25,12 @@ class ReaderFactory:
         Session: sessionmaker[Session],
         source_name: str,
         endpoint_name: str,
+        *,
+        engine: Optional[Engine] = None,
     ) -> BaseReader:
+        kwargs = {}
+        if engine is not None:
+            kwargs["engine"] = engine
         try:
             reader_class = cls._readers[source.type]
             return reader_class(
@@ -31,6 +39,7 @@ class ReaderFactory:
                 Session=Session,
                 source_name=source_name,
                 endpoint_name=endpoint_name,
+                **kwargs,
             )
         except KeyError:
             raise ValueError(

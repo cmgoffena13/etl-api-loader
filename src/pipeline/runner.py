@@ -54,6 +54,7 @@ class PipelineRunner:
             Session=self.Session,
             source_name=source.name,
             endpoint_name=self.endpoint,
+            engine=self.engine,
         )
         self.parser = ParserFactory.create_parser(
             source=source, endpoint_config=endpoint_config

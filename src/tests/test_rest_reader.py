@@ -10,6 +10,8 @@ from src.tests.fixtures.test_configs.rest_configs import (
     TEST_REST_CONFIG_WITH_NEXT_URL_PAGINATION_INCREMENTAL,
     TEST_REST_CONFIG_WITH_OFFSET_PAGINATION,
     TEST_REST_CONFIG_WITH_OFFSET_PAGINATION_INCREMENTAL,
+    TEST_REST_CONFIG_WITH_QUERY_PAGINATION,
+    TEST_REST_CONFIG_WITH_QUERY_PAGINATION_PARAMS,
 )
 
 
@@ -19,10 +21,11 @@ async def test_rest_reader_no_pagination_single_request(
     http_client,
     test_db,
 ):
+    _engine, Session = test_db
     reader = RESTReader(
         source=TEST_REST_CONFIG_NO_PAGINATION,
         client=http_client,
-        Session=test_db,
+        Session=Session,
         source_name="test_api_no_pagination",
         endpoint_name="items",
     )
@@ -46,10 +49,11 @@ async def test_rest_reader_with_offset_pagination(
     http_client,
     test_db,
 ):
+    _engine, Session = test_db
     reader = RESTReader(
         source=TEST_REST_CONFIG_WITH_OFFSET_PAGINATION,
         client=http_client,
-        Session=test_db,
+        Session=Session,
         source_name="test_api_offset_pagination",
         endpoint_name="items",
     )
@@ -84,10 +88,11 @@ async def test_rest_reader_with_next_url_pagination(
     http_client,
     test_db,
 ):
+    _engine, Session = test_db
     reader = RESTReader(
         source=TEST_REST_CONFIG_WITH_NEXT_URL_PAGINATION,
         client=http_client,
-        Session=test_db,
+        Session=Session,
         source_name="test_api_next_url_pagination",
         endpoint_name="items",
     )
@@ -121,10 +126,11 @@ async def test_rest_reader_with_cursor_pagination(
     http_client,
     test_db,
 ):
+    _engine, Session = test_db
     reader = RESTReader(
         source=TEST_REST_CONFIG_WITH_CURSOR_PAGINATION,
         client=http_client,
-        Session=test_db,
+        Session=Session,
         source_name="test_api_cursor_pagination",
         endpoint_name="items",
     )
@@ -155,19 +161,93 @@ async def test_rest_reader_with_cursor_pagination(
 
 
 @pytest.mark.asyncio
+async def test_rest_reader_with_query_pagination_path(
+    mock_rest_query_pagination_path_responses,
+    http_client,
+    test_db,
+):
+    """Query pagination: rows from DB drive GETs with value in path (path={ip}/geo/lookup)."""
+    engine, Session = test_db
+    reader = RESTReader(
+        source=TEST_REST_CONFIG_WITH_QUERY_PAGINATION,
+        client=http_client,
+        Session=Session,
+        source_name="test_api_query_pagination",
+        endpoint_name="geo",
+        engine=engine,
+    )
+    reader.batch_size = 10
+
+    batches = []
+    url = "https://api.example.com"
+    endpoint_config = TEST_REST_CONFIG_WITH_QUERY_PAGINATION.endpoints["geo"]
+    async for batch in reader.read(url=url, endpoint_config=endpoint_config):
+        batches.append(list(batch))
+
+    assert len(batches) == 1
+    assert len(batches[0]) == 3
+    assert batches[0][0]["result"]["ip"] == "1.2.3.4"
+    assert batches[0][1]["result"]["ip"] == "5.6.7.8"
+    assert batches[0][2]["result"]["ip"] == "9.10.11.12"
+
+    requests = mock_rest_query_pagination_path_responses.get_requests()
+    assert len(requests) == 3
+    assert str(requests[0].url) == "https://api.example.com/1.2.3.4/geo/lookup"
+    assert str(requests[1].url) == "https://api.example.com/5.6.7.8/geo/lookup"
+    assert str(requests[2].url) == "https://api.example.com/9.10.11.12/geo/lookup"
+
+
+@pytest.mark.asyncio
+async def test_rest_reader_with_query_pagination_params(
+    mock_rest_query_pagination_params_responses,
+    http_client,
+    test_db,
+):
+    """Query pagination: rows from DB drive GETs with value in query params (?ip=...)."""
+    engine, Session = test_db
+    reader = RESTReader(
+        source=TEST_REST_CONFIG_WITH_QUERY_PAGINATION_PARAMS,
+        client=http_client,
+        Session=Session,
+        source_name="test_api_query_pagination_params",
+        endpoint_name="lookup",
+        engine=engine,
+    )
+    reader.batch_size = 10
+
+    batches = []
+    url = "https://api.example.com/lookup"
+    endpoint_config = TEST_REST_CONFIG_WITH_QUERY_PAGINATION_PARAMS.endpoints["lookup"]
+    async for batch in reader.read(url=url, endpoint_config=endpoint_config):
+        batches.append(list(batch))
+
+    assert len(batches) == 1
+    assert len(batches[0]) == 3
+    assert batches[0][0]["result"]["ip"] == "1.2.3.4"
+    assert batches[0][2]["result"]["ip"] == "9.10.11.12"
+
+    requests = mock_rest_query_pagination_params_responses.get_requests()
+    assert len(requests) == 3
+    assert "ip=1.2.3.4" in str(requests[0].url)
+    assert "ip=5.6.7.8" in str(requests[1].url)
+    assert "ip=9.10.11.12" in str(requests[2].url)
+
+
+@pytest.mark.asyncio
 async def test_rest_reader_with_offset_pagination_incremental(
     mock_rest_offset_pagination_incremental_first_run,
     mock_rest_offset_pagination_incremental_second_run,
     http_client,
     test_db,
 ):
+    _engine, Session = test_db
     source_name = "test_api_offset_pagination_incremental"
     endpoint_name = "items"
 
     reader = RESTReader(
         source=TEST_REST_CONFIG_WITH_OFFSET_PAGINATION_INCREMENTAL,
         client=http_client,
-        Session=test_db,
+        Session=Session,
         source_name=source_name,
         endpoint_name=endpoint_name,
     )
@@ -186,9 +266,9 @@ async def test_rest_reader_with_offset_pagination_incremental(
     )
 
     # Commit the watermark after successful first run (simulating publish)
-    commit_watermark(source_name, endpoint_name, test_db)
+    commit_watermark(source_name, endpoint_name, Session)
 
-    watermark = get_watermark(source_name, endpoint_name, test_db)
+    watermark = get_watermark(source_name, endpoint_name, Session)
     assert watermark == "12"
 
     batches = []
@@ -208,13 +288,14 @@ async def test_rest_reader_with_next_url_pagination_incremental(
     http_client,
     test_db,
 ):
+    _engine, Session = test_db
     source_name = "test_api_next_url_pagination_incremental"
     endpoint_name = "items"
 
     reader = RESTReader(
         source=TEST_REST_CONFIG_WITH_NEXT_URL_PAGINATION_INCREMENTAL,
         client=http_client,
-        Session=test_db,
+        Session=Session,
         source_name=source_name,
         endpoint_name=endpoint_name,
     )
@@ -233,9 +314,9 @@ async def test_rest_reader_with_next_url_pagination_incremental(
     )
 
     # Commit the watermark after successful first run (simulating publish)
-    commit_watermark(source_name, endpoint_name, test_db)
+    commit_watermark(source_name, endpoint_name, Session)
 
-    watermark = get_watermark(source_name, endpoint_name, test_db)
+    watermark = get_watermark(source_name, endpoint_name, Session)
     assert watermark == "https://api.example.com/items?page=3"
 
     batches = []
@@ -255,13 +336,14 @@ async def test_rest_reader_with_cursor_pagination_incremental(
     http_client,
     test_db,
 ):
+    _engine, Session = test_db
     source_name = "test_api_cursor_pagination_incremental"
     endpoint_name = "items"
 
     reader = RESTReader(
         source=TEST_REST_CONFIG_WITH_CURSOR_PAGINATION_INCREMENTAL,
         client=http_client,
-        Session=test_db,
+        Session=Session,
         source_name=source_name,
         endpoint_name=endpoint_name,
     )
@@ -280,9 +362,9 @@ async def test_rest_reader_with_cursor_pagination_incremental(
     )
 
     # Commit the watermark after successful first run (simulating publish)
-    commit_watermark(source_name, endpoint_name, test_db)
+    commit_watermark(source_name, endpoint_name, Session)
 
-    watermark = get_watermark(source_name, endpoint_name, test_db)
+    watermark = get_watermark(source_name, endpoint_name, Session)
     assert watermark == "item_12"
 
     batches = []

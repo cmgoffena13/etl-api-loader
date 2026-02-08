@@ -61,16 +61,13 @@ class GraphQLReader(BaseReader):
                 logger.debug(f"Read final batch of {len(accumulated_items)} items")
                 yield accumulated_items
         else:
-            response = await self.client.post(
+            data = await self.client.post(
                 url,
                 backoff_starting_delay=endpoint_config.backoff_starting_delay,
                 headers=dict(request.headers),
                 params=default_params,
                 json=endpoint_config.body,
             )
-            response.raise_for_status()
-
-            data = response.json()
             items = extract_items(data, endpoint_config, self.source)
             if items:
                 logger.info(f"Read single batch of {len(items)} items")

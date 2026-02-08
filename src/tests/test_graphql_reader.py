@@ -12,10 +12,11 @@ async def test_graphql_reader_no_pagination_single_request(
     http_client,
     test_db,
 ):
+    _engine, Session = test_db
     reader = GraphQLReader(
         source=TEST_GRAPHQL_CONFIG_NO_PAGINATION,
         client=http_client,
-        Session=test_db,
+        Session=Session,
         source_name="test_graphql_no_pagination",
         endpoint_name="items",
     )

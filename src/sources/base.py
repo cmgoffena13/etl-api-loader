@@ -64,6 +64,32 @@ class NextUrlPaginationConfig(PaginationConfig):
     next_url_key: str = Field(default="next_url")
 
 
+class QueryPaginationConfig(PaginationConfig):
+    """
+    Run a SQL query; each row becomes one GET.
+    Query column names are injected into the URL via {column_name} in path or params.
+    """
+
+    query: str
+    value_in: Literal["path", "params"]
+    path: Optional[str] = Field(
+        default=None,
+        description="URL path with {col} placeholders, e.g. {ip}/geo/lookup",
+    )
+    params: Optional[str] = Field(
+        default=None, description="Query string with {col} placeholders, e.g. ip={ip}"
+    )
+    max_concurrent: int = Field(default=10)
+
+    @model_validator(mode="after")
+    def validate_query_pagination(self):
+        if self.value_in == "path" and not self.path:
+            raise ValueError("path is required when value_in is 'path'")
+        if self.value_in == "params" and not self.params:
+            raise ValueError("params is required when value_in is 'params'")
+        return self
+
+
 class TableConfig(BaseModel):
     data_model: Type[SQLModel]
     audit_query: Optional[str] = None
@@ -87,7 +113,9 @@ class APIConfig(BaseModel):
     default_headers: dict[str, str] = Field(default_factory=dict)
     default_params: dict[str, Any] = Field(default_factory=dict)
 
-    pagination_strategy: Optional[Literal["offset", "next_url", "cursor"]] = None
+    pagination_strategy: Optional[Literal["offset", "next_url", "cursor", "query"]] = (
+        None
+    )
     pagination: Optional[PaginationConfig] = None
 
     authentication_strategy: Optional[Literal["auth", "bearer"]] = None
