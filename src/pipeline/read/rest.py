@@ -71,5 +71,5 @@ class RESTReader(BaseReader):
             data = response.json()
             items = extract_items(data, endpoint_config, self.source)
             if items:
-                logger.info(f"Read single batch of {len(items)} items")
+                logger.debug(f"Read single batch of {len(items)} items")
                 yield items

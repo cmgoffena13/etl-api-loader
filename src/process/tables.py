@@ -93,6 +93,8 @@ def _create_stage_table(
     columns.append(Column("etl_row_hash", LargeBinary(16), nullable=False))
 
     table = Table(table_name, metadata, *columns)
+
+    logger.debug(f"Creating stage table: {table_name}")
     metadata.drop_all(engine, tables=[table])
     metadata.create_all(engine, tables=[table])
 
@@ -100,6 +102,7 @@ def _create_stage_table(
 def create_stage_tables(
     endpoint_config: APIEndpointConfig, engine: Engine, metadata: MetaData
 ) -> None:
+    logger.info(f"Creating {len(endpoint_config.tables)} stage tables...")
     for table_config in endpoint_config.tables:
         _create_stage_table(table_config.data_model, engine, metadata)
 
@@ -111,7 +114,7 @@ def _db_drop_stage_table(stage_table_name: str, Session: sessionmaker[Session]):
             drop_sql = text(f"DROP TABLE IF EXISTS {stage_table_name}")
             session.execute(drop_sql)
             session.commit()
-            logger.info(f"Dropped stage table: {stage_table_name}")
+            logger.debug(f"Dropped stage table: {stage_table_name}")
         except Exception as e:
             logger.exception(f"Error dropping stage table: {stage_table_name}: {e}")
             session.rollback()
@@ -125,6 +128,8 @@ def drop_stage_tables(
     for table_config in endpoint_config.tables:
         table_name = camel_to_snake(table_config.data_model.__name__)
         stage_table_names.append(f"stage_{table_name}")
+
+    logger.info(f"Dropping {len(stage_table_names)} stage tables...")
     for stage_table_name in stage_table_names:
         _db_drop_stage_table(stage_table_name, Session)
 
@@ -183,7 +188,7 @@ def evolve_table_schema(model: Type[SQLModel], engine: Engine) -> None:
 
             try:
                 conn.execute(text(alter_sql))
-                logger.info(
+                logger.debug(
                     f"Added column {col_name} ({type_str}) to {target_table_name}"
                 )
             except Exception as e:

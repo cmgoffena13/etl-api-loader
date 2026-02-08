@@ -47,7 +47,7 @@ class BaseWriter(ABC):
             batch[batch_index] = record
             batch_index += 1
             if batch_index == self.batch_size:
-                logger.info(
+                logger.debug(
                     f"Writing batch of {len(batch)} items to {stage_table_name}..."
                 )
                 with self.Session() as session:
@@ -61,7 +61,7 @@ class BaseWriter(ABC):
                 batch[:] = [None] * self.batch_size
                 batch_index = 0
         if batch_index > 0:
-            logger.info(
+            logger.debug(
                 f"Writing final batch of {len(batch[:batch_index])} items to {stage_table_name}..."
             )
             with self.Session() as session:

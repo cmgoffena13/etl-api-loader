@@ -81,10 +81,12 @@ class PipelineRunner:
         self.writer.write(table_batches=table_batches)
 
     def audit(self) -> None:
+        logger.info(f"Auditing data from API endpoint...")
         self.auditor.audit_grain()
         self.auditor.audit_data()
 
     def publish(self) -> None:
+        logger.info(f"Publishing data from API endpoint...")
         self.publisher.publish()
         if self.endpoint_config.incremental:
             commit_watermark(self.source.name, self.endpoint, self.Session)
@@ -94,6 +96,7 @@ class PipelineRunner:
 
     async def run(self):
         try:
+            logger.info(f"Starting to process API endpoint...")
             async for batch in self.read():
                 async for table_batches in self.parse(batch=batch):
                     await asyncio.to_thread(self.write, table_batches)
@@ -101,7 +104,7 @@ class PipelineRunner:
             await asyncio.to_thread(self.publish)
             await asyncio.to_thread(self.cleanup)
             self.result = (True, self.url, None)
-            logger.info(f"API Endpoint {self.url} processed successfully!")
+            logger.info(f"API Endpoint processed successfully!")
         except Exception as e:
             logger.exception(f"Error processing endpoint {self.url}: {e}")
             self.result = (False, self.url, str(e))

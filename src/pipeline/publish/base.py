@@ -82,7 +82,7 @@ class BasePublisher(ABC):
             "target_table_name"
         ]
         with self.Session() as session:
-            logger.info(
+            logger.debug(
                 f"Publishing data from {stage_table_name} to {target_table_name}..."
             )
             try:

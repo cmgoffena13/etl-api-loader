@@ -24,16 +24,17 @@ def process(
         None, "--endpoint", "-e", help="API Endpoint to process Ex. products"
     ),
 ) -> None:
-    root_logger = structlog.get_logger("src")
+    root_logger = logging.getLogger("src")
+    if isinstance(config, DevConfig):
+        root_logger.setLevel(logging.DEBUG)
+    else:
+        root_logger.setLevel(logging.INFO)
     for handler in root_logger.handlers:
         if isinstance(handler, RichHandler):
             handler.console = console
             handler.show_time = False
             handler.show_path = False
-            if isinstance(config, DevConfig):
-                handler.setLevel(logging.DEBUG)
-            else:
-                handler.setLevel(logging.WARNING)
+            handler.setLevel(root_logger.level)
 
     processor = Processor()
     if source and endpoint:
