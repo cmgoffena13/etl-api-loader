@@ -67,21 +67,12 @@ class NextUrlPaginationConfig(PaginationConfig):
 class QueryPaginationConfig(PaginationConfig):
     """
     Run a SQL query; each row becomes one GET.
-    Query column names are injected into the URL via {column_name} in path or params.
+    Substitute url or param value using {column_name} placeholder.
     """
 
     query: str
     value_in: Literal["path", "params"]
-    params: Optional[str] = Field(
-        default=None, description="Query string with {col} placeholders, e.g. ip={ip}"
-    )
     max_concurrent: int = Field(default=10)
-
-    @model_validator(mode="after")
-    def validate_query_pagination(self):
-        if self.value_in == "params" and not self.params:
-            raise ValueError("params is required when value_in is 'params'")
-        return self
 
 
 class TableConfig(BaseModel):

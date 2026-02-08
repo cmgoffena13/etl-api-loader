@@ -182,7 +182,6 @@ TEST_REST_CONFIG_WITH_QUERY_PAGINATION_PARAMS = APIConfig(
             pagination=QueryPaginationConfig(
                 query="SELECT ip FROM query_input",
                 value_in="params",
-                params="ip={ip}",
                 max_concurrent=2,
             ),
         ),

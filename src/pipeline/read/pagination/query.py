@@ -1,6 +1,6 @@
 import asyncio
 from collections.abc import AsyncGenerator
-from urllib.parse import urljoin
+from urllib.parse import urlencode, urljoin
 
 import structlog
 from httpx import Request
@@ -54,7 +54,7 @@ class QueryPaginationStrategy(BasePaginationStrategy):
             base_dir = base if base.endswith("/") else f"{base}/"
             url = urljoin(base_dir, path)
         else:
-            qs = self.config.params.format(**row)
+            qs = urlencode(row)
             url = f"{base}?{qs}"
         return url
 
