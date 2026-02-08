@@ -1,5 +1,6 @@
 from src.sources.dummyjson.config import DUMMYJSON_CONFIG
 from src.sources.jsonplaceholder.config import JSONPLACEHOLDER_CONFIG
+from src.sources.openweather.config import OPENWEATHER_CONFIG
 from src.sources.polygon.config import POLYGON_CONFIG
 from src.sources.registry import SourceRegistry
 from src.sources.rickandmorty.config import RICKANDMORTY_CONFIG
@@ -13,5 +14,6 @@ MASTER_SOURCE_REGISTRY.add_sources(
         RICKANDMORTY_CONFIG,
         STRIPE_CONFIG,
         POLYGON_CONFIG,
+        OPENWEATHER_CONFIG,
     ]
 )
