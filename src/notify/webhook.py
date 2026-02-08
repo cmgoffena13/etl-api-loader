@@ -67,9 +67,6 @@ class WebhookNotifier(BaseNotifier):
 
     @retry()
     def _send_webhook(self):
-        if not self.webhook_url:
-            raise ValueError("Webhook URL not configured")
-
         response = httpx.post(
             str(self.webhook_url),
             json=self.webhook_message,
