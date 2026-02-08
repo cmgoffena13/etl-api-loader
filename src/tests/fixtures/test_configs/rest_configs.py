@@ -156,20 +156,17 @@ TEST_REST_CONFIG_WITH_QUERY_PAGINATION = APIConfig(
     name="test_api_query_pagination",
     base_url="https://api.example.com",
     type="rest",
-    pagination_strategy="query",
-    pagination=QueryPaginationConfig(
-        query="SELECT ip FROM query_input",
-        value_in="path",
-        path="{ip}/geo/lookup",
-        max_concurrent=2,
-    ),
     endpoints={
-        "geo": APIEndpointConfig(
+        "{ip}/geo/lookup": APIEndpointConfig(
             json_entrypoint="result",
-            tables=[
-                TableConfig(data_model=TestItem),
-            ],
-        )
+            tables=[TableConfig(data_model=TestItem)],
+            pagination_strategy="query",
+            pagination=QueryPaginationConfig(
+                query="SELECT ip FROM query_input",
+                value_in="path",
+                max_concurrent=2,
+            ),
+        ),
     },
 )
 
@@ -177,19 +174,17 @@ TEST_REST_CONFIG_WITH_QUERY_PAGINATION_PARAMS = APIConfig(
     name="test_api_query_pagination_params",
     base_url="https://api.example.com",
     type="rest",
-    pagination_strategy="query",
-    pagination=QueryPaginationConfig(
-        query="SELECT ip FROM query_input",
-        value_in="params",
-        params="ip={ip}",
-        max_concurrent=2,
-    ),
     endpoints={
         "lookup": APIEndpointConfig(
             json_entrypoint="result",
-            tables=[
-                TableConfig(data_model=TestItem),
-            ],
-        )
+            tables=[TableConfig(data_model=TestItem)],
+            pagination_strategy="query",
+            pagination=QueryPaginationConfig(
+                query="SELECT ip FROM query_input",
+                value_in="params",
+                params="ip={ip}",
+                max_concurrent=2,
+            ),
+        ),
     },
 )

@@ -72,10 +72,6 @@ class QueryPaginationConfig(PaginationConfig):
 
     query: str
     value_in: Literal["path", "params"]
-    path: Optional[str] = Field(
-        default=None,
-        description="URL path with {col} placeholders, e.g. {ip}/geo/lookup",
-    )
     params: Optional[str] = Field(
         default=None, description="Query string with {col} placeholders, e.g. ip={ip}"
     )
@@ -83,8 +79,6 @@ class QueryPaginationConfig(PaginationConfig):
 
     @model_validator(mode="after")
     def validate_query_pagination(self):
-        if self.value_in == "path" and not self.path:
-            raise ValueError("path is required when value_in is 'path'")
         if self.value_in == "params" and not self.params:
             raise ValueError("params is required when value_in is 'params'")
         return self
@@ -102,6 +96,10 @@ class APIEndpointConfig(BaseModel):
     backoff_starting_delay: float = Field(default=1)
     incremental: bool = Field(default=False)
     tables: list[TableConfig]
+    pagination_strategy: Optional[Literal["offset", "next_url", "cursor", "query"]] = (
+        None
+    )
+    pagination: Optional[PaginationConfig] = None
 
 
 class APIConfig(BaseModel):

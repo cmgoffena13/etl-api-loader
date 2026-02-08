@@ -173,14 +173,16 @@ async def test_rest_reader_with_query_pagination_path(
         client=http_client,
         Session=Session,
         source_name="test_api_query_pagination",
-        endpoint_name="geo",
+        endpoint_name="{ip}/geo/lookup",
         engine=engine,
     )
     reader.batch_size = 10
 
     batches = []
     url = "https://api.example.com"
-    endpoint_config = TEST_REST_CONFIG_WITH_QUERY_PAGINATION.endpoints["geo"]
+    endpoint_config = TEST_REST_CONFIG_WITH_QUERY_PAGINATION.endpoints[
+        "{ip}/geo/lookup"
+    ]
     async for batch in reader.read(url=url, endpoint_config=endpoint_config):
         batches.append(list(batch))
 

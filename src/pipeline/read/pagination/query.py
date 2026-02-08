@@ -50,7 +50,7 @@ class QueryPaginationStrategy(BasePaginationStrategy):
 
     def _url_for_row(self, base: str, row: dict) -> str:
         if self.config.value_in == "path":
-            path = self.config.path.format(**row)
+            path = self.endpoint_name.format(**row)
             base_dir = base if base.endswith("/") else f"{base}/"
             url = urljoin(base_dir, path)
         else:
