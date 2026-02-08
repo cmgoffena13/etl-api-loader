@@ -175,6 +175,11 @@ def mock_rest_offset_pagination_incremental_second_run(httpx_mock: HTTPXMock):
         url="https://api.example.com/items?offset=12&limit=5",
         json={"items": []},
     )
+    httpx_mock.add_response(
+        method="GET",
+        url="https://api.example.com/items?offset=17&limit=5",
+        json={"items": []},
+    )
     yield httpx_mock
 
 

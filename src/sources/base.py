@@ -49,23 +49,14 @@ class OffsetPaginationConfig(PaginationConfig):
     offset: int
     limit: int
 
-    use_next_offset: bool = Field(default=False)
-    next_offset_key: str = Field(default="next_offset")
-
-    @model_validator(mode="after")
-    def validate_next_offset_config(self):
-        if self.use_next_offset and not self.next_offset_key:
-            raise ValueError(
-                "next_offset_key must be provided when use_next_offset is True"
-            )
-        return self
-
 
 class CursorPaginationConfig(PaginationConfig):
     cursor_param: str = Field(default="cursor")
     next_cursor_key: str = Field(default="next_cursor")
     limit_param: str = Field(default="limit")
     limit: int = Field(default=100)
+    """Optional value for the first request when no cursor/watermark (e.g. '0' for offset-style)."""
+    initial_value: Optional[str] = Field(default=None)
 
 
 class NextUrlPaginationConfig(PaginationConfig):

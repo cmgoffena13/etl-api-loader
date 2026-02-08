@@ -55,10 +55,10 @@ class GraphQLReader(BaseReader):
                 while len(accumulated_items) >= self.batch_size:
                     batch = accumulated_items[: self.batch_size]
                     accumulated_items = accumulated_items[self.batch_size :]
-                    logger.info(f"Read batch of {len(batch)} items...")
+                    logger.debug(f"Read batch of {len(batch)} items...")
                     yield batch
             if accumulated_items:
-                logger.info(f"Read final batch of {len(accumulated_items)} items")
+                logger.debug(f"Read final batch of {len(accumulated_items)} items")
                 yield accumulated_items
         else:
             response = await self.client.post(

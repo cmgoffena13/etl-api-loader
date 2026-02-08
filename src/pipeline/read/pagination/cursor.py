@@ -1,4 +1,5 @@
 from collections.abc import AsyncGenerator
+from typing import Any, Optional
 
 import httpx
 import orjson
@@ -15,37 +16,32 @@ from src.sources.base import APIConfig, APIEndpointConfig, CursorPaginationConfi
 logger = structlog.getLogger(__name__)
 
 
-def _extract_cursor_value(data: dict, key: str) -> str | None:
-    """Extract cursor value from response using key path (supports array indexing like data[-1].id)."""
-    keys = key.split(".")
-    current = data
-    for k in keys:
-        if k.endswith("]") and "[" in k:
-            # Handle array indexing like "data[-1]"
-            array_key, index_str = k.split("[")
-            index_str = index_str.rstrip("]")
-            if isinstance(current, dict) and array_key in current:
-                arr = current[array_key]
-                if isinstance(arr, list):
-                    if index_str == "-1":
-                        current = arr[-1] if len(arr) > 0 else None
-                    else:
-                        try:
-                            idx = int(index_str)
-                            current = arr[idx] if 0 <= idx < len(arr) else None
-                        except ValueError:
-                            return None
-                    if current is None:
-                        return None
-                else:
-                    return None
-            else:
-                return None
-        elif isinstance(current, dict) and k in current:
-            current = current[k]
-        else:
-            return None
-    return current if isinstance(current, str) else None
+def _step(current: Any, part: str) -> Optional[Any]:
+    """Resolve one path part (key or array index like "data[-1]") from current."""
+    result = None
+    try:
+        if "[" in part and part.endswith("]"):
+            key_part, index_part = part.split("[", 1)
+            index_part = index_part.rstrip("]")
+            arr = current[key_part]
+            if isinstance(arr, list):
+                i = -1 if index_part == "-1" else int(index_part)
+                result = arr[i]
+        elif isinstance(current, dict) and part in current:
+            result = current[part]
+    except (KeyError, IndexError, ValueError, TypeError):
+        pass
+    return result
+
+
+def _extract_next_value(data: dict, key: str) -> Optional[str]:
+    """
+    Extract next page token from response (supports key path and array indexing like data[-1].id).
+    Accepts string or int from the API; returns string for use as query param (e.g. cursor or offset).
+    """
+    for part in key.split("."):
+        data = _step(data, part)
+    return str(data) if isinstance(data, (str, int)) else None
 
 
 class CursorPaginationStrategy(BasePaginationStrategy):
@@ -73,6 +69,7 @@ class CursorPaginationStrategy(BasePaginationStrategy):
         self.next_cursor_key = source.pagination.next_cursor_key
         self.limit_param = source.pagination.limit_param
         self.limit = source.pagination.limit
+        self.initial_value = source.pagination.initial_value
 
     async def _fetch_cursor(
         self,
@@ -80,10 +77,11 @@ class CursorPaginationStrategy(BasePaginationStrategy):
         cursor: str | None,
         endpoint_config: APIEndpointConfig,
     ) -> dict | None:
-        """Fetch a page using the provided cursor."""
+        """Fetch a page using the provided cursor (or initial_value when cursor is None)."""
         params = dict(request.url.params)
-        if cursor:
-            params[self.cursor_param] = cursor
+        token = cursor if cursor is not None else self.initial_value
+        if token:
+            params[self.cursor_param] = token
         params[self.limit_param] = self.limit
         method_function = getattr(self.client, request.method.lower())
         url = str(request.url.copy_with(query=None))
@@ -123,7 +121,7 @@ class CursorPaginationStrategy(BasePaginationStrategy):
                 response_data = await self._fetch_cursor(
                     request=request, cursor=watermark, endpoint_config=endpoint_config
                 )
-                next_cursor = _extract_cursor_value(response_data, self.next_cursor_key)
+                next_cursor = _extract_next_value(response_data, self.next_cursor_key)
                 if next_cursor:
                     cursor = next_cursor
                 else:
@@ -146,7 +144,7 @@ class CursorPaginationStrategy(BasePaginationStrategy):
 
             yield items
 
-            next_cursor = _extract_cursor_value(response_data, self.next_cursor_key)
+            next_cursor = _extract_next_value(response_data, self.next_cursor_key)
             if not next_cursor:
                 logger.debug(
                     f"No next_cursor found in response - stopping pagination, cursor: {cursor}"
