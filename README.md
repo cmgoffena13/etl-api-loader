@@ -112,3 +112,55 @@ The API returns the URL for the next page in the response (e.g. a `next_url` fie
 ### Query Pagination
 
 Runs a SQL query against your database and triggers calls to an API for each record in the resultset. Addresses poor API design that forces the N+1 problem. Fetches multiple pages in parallel up to `max_concurrent`.
+
+## JSON Parser
+The JSON Parser allows for an easy way to create tabular models from a JSON response. 
+
+### JSON Map
+The JSON Parser scans the JSON response and creates a map of the data as it traverses it, building paths (e.g. `root`, `root.items[0]`) so that SQLModel aliases can point to any node. With `json_entrypoint` set to `"transactions"`, the reader turns each element of that array into one batch record; the parser then walks each record (one transaction at a time). Example API response:
+
+```json
+{
+  "transactions": [
+    {
+      "id": 1,
+      "customer_id": "cust_abc",
+      "created_at": "2024-01-15T10:00:00Z",
+      "total_cents": 4500,
+      "items": [
+        { "id": 101, "product_sku": "SKU-A", "quantity": 2, "unit_price_cents": 999 },
+        { "id": 102, "product_sku": "SKU-B", "quantity": 1, "unit_price_cents": 2450 }
+      ]
+    },
+    {
+      "id": 2,
+      "customer_id": "cust_xyz",
+      "created_at": "2024-01-16T14:30:00Z",
+      "total_cents": 1899,
+      "items": [
+        { "id": 201, "product_sku": "SKU-C", "quantity": 3, "unit_price_cents": 633 }
+      ]
+    }
+  ]
+}
+```
+
+### SQLModel Aliasing
+Each SQLModel represents a table; each column has an **alias** that points to a path in that JSON. Use `[*]` in the alias to bind to array elements so one row is emitted per element. Example for the response above (with `json_entrypoint="transactions"`, each batch record is one transaction object, so `root` is that transaction):
+
+```python
+class Transaction(SQLModel, table=True):
+    id: int = Field(alias="root.id")
+    customer_id: str = Field(alias="root.customer_id")
+    created_at: str = Field(alias="root.created_at")
+    total_cents: int = Field(alias="root.total_cents")
+
+class TransactionItem(SQLModel, table=True):
+    transaction_id: int = Field(alias="root.id")
+    item_id: int = Field(alias="root.items[*].id")
+    product_sku: str = Field(alias="root.items[*].product_sku")
+    quantity: int = Field(alias="root.items[*].quantity")
+    unit_price_cents: int = Field(alias="root.items[*].unit_price_cents")
+```
+
+The parser walks each batch record, matches paths to these aliases, and extracts one row per `Transaction` and one row per element of `root.items[*]` per `TransactionItem`, giving you a transactions table and a transaction_items table with a natural foreign key from `transaction_id`. Pretty cool, eh?
