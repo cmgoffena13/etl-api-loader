@@ -44,6 +44,7 @@ APIs (Application Programming Interfaces) are the standard in tech to have servi
 - [JSON Parser](#json-parser)
   - [JSON Map](#json-map)
   - [SQLModel Aliasing](#sqlmodel-aliasing)
+- [Audit Queries](#audit-queries)
 
 
 ## Features
@@ -167,3 +168,25 @@ class TransactionItem(SQLModel, table=True):
 ```
 
 The parser walks each batch record, matches paths to these aliases, and extracts one row per `Transaction` and one row per element of `root.items[*]` per `TransactionItem`, giving you a transactions table and a transaction_items table with a natural foreign key from `transaction_id`. Pretty cool, eh?
+
+## Audit Queries
+Aggregate audit queries can be assigned to a SQLModel to audit the entirety of the data. A good example that aligns to our parser example would be to check that the sum of the `unit_price_cents` column matches the `total_cents` of the transaction. Example SQL below:
+```
+;WITH CTE AS (
+  SELECT
+  t.transaction_id,
+  t.total_cents,
+  SUM(ti.unit_price_cents) AS total_transaction_item_cents
+  FROM public.stage_transaction AS t
+  INNER JOIN public.stage_transaction_item AS ti
+    ON ti.transaction_id = t.id
+  GROUPY BY t.transaction_id, t.total_cents
+)
+SELECT
+CASE WHEN 
+  SUM(CASE WHEN total_cents = total_transaction_item_cents THEN 1 ELSE 0 END) = COUNT(*)
+  THEN 1 ELSE 0
+END AS item_amount_matches_transaction
+FROM CTE
+```
+This ensures that the integrity of the transaction is checked across the response before the data is merged into a production table.
