@@ -1,6 +1,6 @@
 # ApiLoader
 
-ApiLoader is a robust Data Engineering services that ingests data from APIs into a database.
+ApiLoader is a robust Data Engineering service that pulls data from APIs and parses the JSON into a tabular format before ingesting the data into a database.
 
  - Multiple API protocols supported (Rest, GraphQL)
    - GraphQL has limited support, let me know if you know of a good free GraphQL API!
