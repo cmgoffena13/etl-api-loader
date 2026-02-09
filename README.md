@@ -41,6 +41,9 @@ APIs (Application Programming Interfaces) are the standard in tech to have servi
   - [Cursor Pagination](#cursor-pagination)
   - [NextUrl Pagination](#nexturl-pagination)
   - [Query Pagination](#query-pagination)
+- [JSON Parser](#json-parser)
+  - [JSON Map](#json-map)
+  - [SQLModel Aliasing](#sqlmodel-aliasing)
 
 
 ## Features
