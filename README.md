@@ -171,7 +171,7 @@ The parser walks each batch record, matches paths to these aliases, and extracts
 
 ## Audit Queries
 Aggregate audit queries can be assigned to a SQLModel to audit the entirety of the data. A good example that aligns to our parser example would be to check that the sum of the `unit_price_cents` column matches the `total_cents` of the transaction. Example SQL below:
-```
+```sql
 ;WITH CTE AS (
   SELECT
   t.transaction_id,
