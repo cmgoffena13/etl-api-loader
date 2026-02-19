@@ -194,7 +194,8 @@ class JSONParser(BaseParser):
                     raise e
 
     async def _parsing_walk(self, obj: Any, path: str = "root"):
-        self.indexed_cache[path] = obj
+        if path != "root":
+            self.indexed_cache[path] = obj
 
         if isinstance(obj, dict):
             for key, value in obj.items():
