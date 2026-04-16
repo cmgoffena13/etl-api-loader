@@ -1,7 +1,9 @@
 ARG UV_VERSION=0.9.15
 ARG PYTHON_VERSION=3.12
+ARG UV_IMAGE_TYPYE=trixie-slim
+ARG IMAGE_TYPE=slim-trixie
 
-FROM ghcr.io/astral-sh/uv:${UV_VERSION}-python${PYTHON_VERSION}-bookworm-slim AS builder
+FROM ghcr.io/astral-sh/uv:${UV_VERSION}-python${PYTHON_VERSION}-${UV_IMAGE_TYPYE} AS builder
 
 ENV PYTHONUNBUFFERED=1 UV_LINK_MODE=copy UV_COMPILE_BYTECODE=1 UV_PYTHON_CACHE_DIR=/root/.cache/uv/python
 
@@ -16,7 +18,7 @@ COPY . /app
 RUN --mount=type=cache,target=/root/.cache/uv/python \
     uv sync --frozen --no-dev
 
-FROM python:${PYTHON_VERSION}-slim-bookworm AS runtime
+FROM python:${PYTHON_VERSION}-${IMAGE_TYPE} AS runtime
 
 RUN groupadd -r appgroup && \
     useradd -r -g appgroup apiloader
