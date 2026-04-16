@@ -15,10 +15,10 @@ logger = structlog.getLogger(__name__)
 LogLevel = Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
 SUPPORTED_DATABASE_DRIVERS = {
     "postgresql": "postgresql",
+    "sqlite": "sqlite",
+    # "bigquery": "bigquery",
     # "mysql": "mysql",
     # "mssql": "mssql",
-    # "sqlite": "sqlite",
-    # "bigquery": "bigquery",
 }
 
 
