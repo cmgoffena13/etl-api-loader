@@ -11,19 +11,13 @@ test:
 
 install:
 	uv sync --frozen --compile-bytecode --all-extras
-
-setup:
-	uv sync --frozen --compile-bytecode --all-extras
-	uv run -- pre-commit install --install-hooks
+	uv run -- prek install
 
 upgrade:
 	uv sync --upgrade --all-extras
 
-run:
-	uv run main.py
-
-postgres:
+start:
 	docker compose up -d postgres --remove-orphans
 
-mysql:
-	docker compose up -d mysql --remove-orphans
+stop:
+	docker compose down
