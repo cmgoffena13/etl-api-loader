@@ -1,8 +1,10 @@
 from collections.abc import AsyncGenerator
+from typing import Optional
 
 import httpx
 import structlog
 from httpx import Request
+from sqlalchemy import Engine
 from sqlalchemy.orm import Session, sessionmaker
 
 from src.pipeline.read.json_utils import extract_items
@@ -14,7 +16,9 @@ from src.sources.base import APIConfig, APIEndpointConfig, NextUrlPaginationConf
 logger = structlog.getLogger(__name__)
 
 
-def _get_nested_value(data: dict, key: str) -> str | None:
+def _get_nested_value(data: Optional[dict], key: str) -> Optional[str]:
+    if data is None:
+        return None
     keys = key.split(".")
     current = data
     for k in keys:
@@ -33,6 +37,7 @@ class NextURLPaginationStrategy(BasePaginationStrategy):
         Session: sessionmaker[Session],
         source_name: str,
         endpoint_name: str,
+        engine: Engine,
     ):
         super().__init__(
             source=source,
@@ -40,6 +45,7 @@ class NextURLPaginationStrategy(BasePaginationStrategy):
             Session=Session,
             source_name=source_name,
             endpoint_name=endpoint_name,
+            engine=engine,
         )
         self.client = client
         if not isinstance(source.pagination, NextUrlPaginationConfig):

@@ -12,7 +12,7 @@ class AuditorFactory:
     }
 
     @classmethod
-    def get_supported_auditors(cls) -> list[type[BaseAuditor]]:
+    def get_supported_auditors(cls) -> list[str]:
         return list(cls._auditors.keys())
 
     @classmethod

@@ -1,6 +1,7 @@
 from typing import Optional
 
 import structlog
+from sqlalchemy import Engine
 from sqlalchemy.orm import Session, sessionmaker
 
 from src.pipeline.read.pagination.base import BasePaginationStrategy
@@ -23,7 +24,7 @@ class PaginationStrategyFactory:
     }
 
     @classmethod
-    def get_supported_strategies(cls) -> list[type[BasePaginationStrategy]]:
+    def get_supported_strategies(cls) -> list[str]:
         return list(cls._strategies.keys())
 
     @classmethod
@@ -34,7 +35,8 @@ class PaginationStrategyFactory:
         Session: sessionmaker[Session],
         source_name: str,
         endpoint_name: str,
-        **kwargs,
+        *,
+        engine: Engine,
     ) -> Optional[BasePaginationStrategy]:
         if source.pagination_strategy is None:
             return None
@@ -51,7 +53,7 @@ class PaginationStrategyFactory:
                 Session=Session,
                 source_name=source_name,
                 endpoint_name=endpoint_name,
-                **kwargs,
+                engine=engine,
             )
         except KeyError:
             raise ValueError(

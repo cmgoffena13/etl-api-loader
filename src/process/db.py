@@ -21,10 +21,12 @@ def _register_pendulum_adapters():
         register_adapter(DateTime, lambda val: val.in_timezone("UTC").isoformat(" "))
         register_adapter(Date, lambda val: val.format("YYYY-MM-DD"))
     elif config.DRIVERNAME == "mysql":
-        pymysql.converters.conversions[pendulum.DateTime] = (
+        pymysql.converters.conversions[pendulum.DateTime] = (  # ty: ignore[invalid-assignment]
             pymysql.converters.escape_datetime
         )
-        pymysql.converters.conversions[DateTime] = pymysql.converters.escape_datetime
+        pymysql.converters.conversions[DateTime] = (  # ty: ignore[invalid-assignment]
+            pymysql.converters.escape_datetime
+        )
 
 
 def setup_db():

@@ -31,7 +31,7 @@ class Processor:
         logger.info("Processor Initialized")
 
     async def process_endpoint(
-        self, name: str, endpoint: str, api_config: APIConfig = None
+        self, name: str, endpoint: str, api_config: Optional[APIConfig] = None
     ) -> None:
         source = (
             api_config

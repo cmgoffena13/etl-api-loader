@@ -1,6 +1,6 @@
 import json
 import re
-from typing import Annotated, Any, AsyncGenerator
+from typing import Annotated, Any, AsyncGenerator, cast
 
 import structlog
 from pydantic import BeforeValidator, TypeAdapter, ValidationError
@@ -104,9 +104,12 @@ class JSONParser(BaseParser):
             )
 
             self.table_batches[model_name] = table_batch
-            # TypeAdapters do not like SQLModels
+            # TypeAdapters do not like SQLModels. cast breaks SQLModel narrowing so
+            # Annotated[...] sees Any (Ty rejects variables typed as type[SQLModel]).
+            model_type_any = cast(Any, model_cls)
             safe_model_cls = Annotated[
-                model_cls, BeforeValidator(model_cls.model_validate)
+                model_type_any,
+                BeforeValidator(model_cls.model_validate),
             ]
             self.model_adapters[model_name] = TypeAdapter(safe_model_cls)
 

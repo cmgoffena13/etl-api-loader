@@ -1,6 +1,6 @@
 import asyncio
 import random
-from typing import Any, Optional
+from typing import Any, Optional, cast
 
 import httpx
 import orjson
@@ -19,7 +19,8 @@ RETRIABLE_STATUS_CODES = {
     504: "Gateway Timeout",
 }
 
-HTTPX_EXCEPTIONS = {
+# Keys are exception classes; values are short labels for logs.
+HTTPX_EXCEPTIONS: dict[type[Exception], str] = {
     httpx.TimeoutException: "Timeout",
     httpx.NetworkError: "Network error",
     httpx.ConnectError: "Connection error",
@@ -42,9 +43,11 @@ def _parse_retry_after(retry_after_header: Optional[str]) -> Optional[float]:
         return float(seconds)
     except ValueError:
         try:
-            retry_date = pendulum.parse(retry_after_header.strip())
+            parsed = pendulum.parse(retry_after_header.strip())
+            if not isinstance(parsed, pendulum.DateTime):
+                return None
             now = pendulum.now()
-            seconds = (retry_date - now).total_seconds()
+            seconds = (parsed - now).total_seconds()
             # If date is in the past or invalid, fall back to None
             if seconds <= 0:
                 return None
@@ -102,20 +105,26 @@ class AsyncProductionHTTPClient:
             pool=pool_timeout,  # Max seconds to wait when trying to acquire a connection from the pool
         )
 
-        client_kwargs = {
-            "timeout": httpx_timeout,
-            "headers": default_headers,
-            "limits": httpx.Limits(
-                max_keepalive_connections=max_keepalive_connections,
-                max_connections=max_connections,
-                keepalive_expiry=keepalive_expiry,
-            ),
-            "http2": True,  # Enable HTTP/2 for better connection reuse
-        }
+        limits = httpx.Limits(
+            max_keepalive_connections=max_keepalive_connections,
+            max_connections=max_connections,
+            keepalive_expiry=keepalive_expiry,
+        )
         if base_url is not None:
-            client_kwargs["base_url"] = base_url
-
-        self.client = httpx.AsyncClient(**client_kwargs)
+            self.client = httpx.AsyncClient(
+                timeout=httpx_timeout,
+                headers=default_headers,
+                limits=limits,
+                http2=True,
+                base_url=base_url,
+            )
+        else:
+            self.client = httpx.AsyncClient(
+                timeout=httpx_timeout,
+                headers=default_headers,
+                limits=limits,
+                http2=True,
+            )
 
     async def close(self):
         """Clean up the client and close all connections."""

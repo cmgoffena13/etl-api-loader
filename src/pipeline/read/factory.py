@@ -1,5 +1,3 @@
-from typing import Optional
-
 from sqlalchemy import Engine
 from sqlalchemy.orm import Session, sessionmaker
 
@@ -14,7 +12,7 @@ class ReaderFactory:
     _readers = {"rest": RESTReader, "graphql": GraphQLReader}
 
     @classmethod
-    def get_supported_readers(cls) -> list[type[BaseReader]]:
+    def get_supported_readers(cls) -> list[str]:
         return list(cls._readers.keys())
 
     @classmethod
@@ -26,11 +24,8 @@ class ReaderFactory:
         source_name: str,
         endpoint_name: str,
         *,
-        engine: Optional[Engine] = None,
+        engine: Engine,
     ) -> BaseReader:
-        kwargs = {}
-        if engine is not None:
-            kwargs["engine"] = engine
         try:
             reader_class = cls._readers[source.type]
             return reader_class(
@@ -39,7 +34,7 @@ class ReaderFactory:
                 Session=Session,
                 source_name=source_name,
                 endpoint_name=endpoint_name,
-                **kwargs,
+                engine=engine,
             )
         except KeyError:
             raise ValueError(

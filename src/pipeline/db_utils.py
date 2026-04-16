@@ -2,6 +2,7 @@ from typing import Dict, Type
 
 import structlog
 import xxhash
+from sqlalchemy import inspect as sa_inspect
 from sqlmodel import SQLModel
 
 from src.settings import config
@@ -16,15 +17,15 @@ def db_create_row_hash(
         key: str(value) if value is not None else "" for key, value in record.items()
     }
 
-    data_string = "|".join(
-        string_items[key] for key in sorted_keys if key in string_items
-    )
+    keys = sorted_keys or ()
+    data_string = "|".join(string_items[key] for key in keys if key in string_items)
 
     return xxhash.xxh128(data_string.encode("utf-8")).digest()
 
 
 def db_get_primary_keys(data_model: Type[SQLModel]) -> list[str]:
-    return list(data_model.__table__.primary_key.columns.keys())
+    mapper = sa_inspect(data_model)
+    return [col.key for col in mapper.primary_key]
 
 
 def db_create_duplicate_grain_examples_sql(

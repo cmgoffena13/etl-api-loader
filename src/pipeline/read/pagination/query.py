@@ -24,7 +24,6 @@ class QueryPaginationStrategy(BasePaginationStrategy):
         Session: sessionmaker[Session],
         source_name: str,
         endpoint_name: str,
-        *,
         engine: Engine,
     ):
         super().__init__(
@@ -33,9 +32,9 @@ class QueryPaginationStrategy(BasePaginationStrategy):
             Session=Session,
             source_name=source_name,
             endpoint_name=endpoint_name,
+            engine=engine,
         )
         self.client = client
-        self.engine = engine
         if not isinstance(source.pagination, QueryPaginationConfig):
             raise ValueError(
                 f"Expected QueryPaginationConfig, got {type(source.pagination)}"

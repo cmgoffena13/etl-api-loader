@@ -4,6 +4,7 @@ from collections.abc import AsyncGenerator
 import httpx
 import structlog
 from httpx import Request
+from sqlalchemy import Engine
 from sqlalchemy.orm import Session, sessionmaker
 
 from src.pipeline.read.json_utils import extract_items
@@ -23,6 +24,7 @@ class OffsetPaginationStrategy(BasePaginationStrategy):
         Session: sessionmaker[Session],
         source_name: str,
         endpoint_name: str,
+        engine: Engine,
     ):
         super().__init__(
             source=source,
@@ -30,6 +32,7 @@ class OffsetPaginationStrategy(BasePaginationStrategy):
             Session=Session,
             source_name=source_name,
             endpoint_name=endpoint_name,
+            engine=engine,
         )
         self.client = client
         if not isinstance(source.pagination, OffsetPaginationConfig):
@@ -52,8 +55,8 @@ class OffsetPaginationStrategy(BasePaginationStrategy):
     ) -> dict | None:
         async with self.semaphore:
             params = dict(request.url.params)
-            params[self.offset_param] = offset
-            params[self.limit_param] = self.limit
+            params[self.offset_param] = str(offset)
+            params[self.limit_param] = str(self.limit)
             url = str(request.url.copy_with(query=None))
             logger.debug(f"Fetching paginated page for url: {url}, offset: {offset}")
             try:

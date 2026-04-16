@@ -2,6 +2,7 @@ from collections.abc import AsyncGenerator
 
 import structlog
 from httpx import Request
+from sqlalchemy import Engine
 from sqlalchemy.orm import Session, sessionmaker
 
 from src.pipeline.read.base import BaseReader
@@ -20,7 +21,8 @@ class RESTReader(BaseReader):
         Session: sessionmaker[Session],
         source_name: str,
         endpoint_name: str,
-        **kwargs,
+        *,
+        engine: Engine,
     ):
         super().__init__(
             source=source,
@@ -28,7 +30,7 @@ class RESTReader(BaseReader):
             Session=Session,
             source_name=source_name,
             endpoint_name=endpoint_name,
-            **kwargs,
+            engine=engine,
         )
 
     async def read(

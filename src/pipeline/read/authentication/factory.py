@@ -13,7 +13,7 @@ class AuthenticationStrategyFactory:
     }
 
     @classmethod
-    def get_supported_strategies(cls) -> list[type[BaseAuthenticationStrategy]]:
+    def get_supported_strategies(cls) -> list[str]:
         return list(cls._strategies.keys())
 
     @classmethod

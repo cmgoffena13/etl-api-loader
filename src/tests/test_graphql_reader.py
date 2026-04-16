@@ -19,6 +19,7 @@ async def test_graphql_reader_no_pagination_single_request(
         Session=Session,
         source_name="test_graphql_no_pagination",
         endpoint_name="items",
+        engine=_engine,
     )
     reader.batch_size = 2
 

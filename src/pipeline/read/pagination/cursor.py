@@ -4,6 +4,7 @@ from typing import Any, Optional
 import httpx
 import structlog
 from httpx import Request
+from sqlalchemy import Engine
 from sqlalchemy.orm import Session, sessionmaker
 
 from src.pipeline.read.json_utils import extract_items
@@ -33,11 +34,13 @@ def _step(current: Any, part: str) -> Optional[Any]:
     return result
 
 
-def _extract_next_value(data: dict, key: str) -> Optional[str]:
+def _extract_next_value(data: Optional[dict], key: str) -> Optional[str]:
     """
     Extract next page token from response (supports key path and array indexing like data[-1].id).
     Accepts string or int from the API; returns string for use as query param (e.g. cursor or offset).
     """
+    if data is None:
+        return None
     for part in key.split("."):
         data = _step(data, part)
     return str(data) if isinstance(data, (str, int)) else None
@@ -51,6 +54,7 @@ class CursorPaginationStrategy(BasePaginationStrategy):
         Session: sessionmaker[Session],
         source_name: str,
         endpoint_name: str,
+        engine: Engine,
     ):
         super().__init__(
             source=source,
@@ -58,6 +62,7 @@ class CursorPaginationStrategy(BasePaginationStrategy):
             Session=Session,
             source_name=source_name,
             endpoint_name=endpoint_name,
+            engine=engine,
         )
         self.client = client
         if not isinstance(source.pagination, CursorPaginationConfig):
@@ -81,7 +86,7 @@ class CursorPaginationStrategy(BasePaginationStrategy):
         token = cursor if cursor is not None else self.initial_value
         if token:
             params[self.cursor_param] = token
-        params[self.limit_param] = self.limit
+        params[self.limit_param] = str(self.limit)
         url = str(request.url.copy_with(query=None))
         logger.debug(f"Fetching paginated page, url: {url}, cursor: {cursor}")
         try:

@@ -1,6 +1,6 @@
 from typing import Type
 
-from sqlalchemy import Engine
+from sqlalchemy import Engine, TextClause
 from sqlmodel import SQLModel
 
 from src.pipeline.publish.base import BasePublisher
@@ -11,5 +11,7 @@ class PostgreSQLPublisher(BasePublisher):
     def __init__(self, engine: Engine, endpoint_config: APIEndpointConfig):
         super().__init__(engine, endpoint_config)
 
-    def create_publish_sql(self, data_model: Type[SQLModel], now_iso: str) -> str:
+    def create_publish_sql(
+        self, data_model: Type[SQLModel], now_iso: str
+    ) -> TextClause:
         return super().create_publish_sql(data_model, now_iso)

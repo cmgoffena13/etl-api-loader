@@ -1,8 +1,9 @@
-from typing import Optional
+from typing import Any, Optional, cast
 
 import pendulum
 import structlog
 from sqlalchemy import text
+from sqlalchemy.engine import CursorResult
 from sqlalchemy.orm import Session, sessionmaker
 
 from src.utils import retry
@@ -108,7 +109,8 @@ def commit_watermark(
                 },
             )
             session.commit()
-            if result.rowcount > 0:
+            rowcount = cast(CursorResult[Any], result).rowcount
+            if rowcount is not None and rowcount > 0:
                 logger.info(f"Committed watermark for {source_name}/{endpoint_name}")
         except Exception as e:
             logger.exception(f"Error committing watermark: {e}")

@@ -2,6 +2,7 @@ from collections.abc import AsyncGenerator
 
 import structlog
 from httpx import Request
+from sqlalchemy import Engine
 from sqlalchemy.orm import Session, sessionmaker
 
 from src.pipeline.read.base import BaseReader
@@ -20,6 +21,8 @@ class GraphQLReader(BaseReader):
         Session: sessionmaker[Session],
         source_name: str,
         endpoint_name: str,
+        *,
+        engine: Engine,
     ):
         super().__init__(
             source=source,
@@ -27,6 +30,7 @@ class GraphQLReader(BaseReader):
             Session=Session,
             source_name=source_name,
             endpoint_name=endpoint_name,
+            engine=engine,
         )
 
     async def read(

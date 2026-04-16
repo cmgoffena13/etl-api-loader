@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from typing import Any, Dict
 
 import structlog
-from sqlalchemy import Engine, text
+from sqlalchemy import Engine, TextClause, text
 from sqlalchemy.orm import Session, sessionmaker
 
 from src.settings import config
@@ -25,7 +25,9 @@ class BaseWriter(ABC):
                 column_list.append("etl_row_hash")
                 self.columns[model_name] = column_list
 
-    def create_stage_insert_sql(self, table_name: str, columns: list[str]) -> str:
+    def create_stage_insert_sql(
+        self, table_name: str, columns: list[str]
+    ) -> TextClause:
         placeholders = ", ".join([f":{col}" for col in columns])
         return text(
             f"INSERT INTO {table_name} ({', '.join(columns)}) VALUES ({placeholders})"

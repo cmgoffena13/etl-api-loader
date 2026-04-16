@@ -32,8 +32,6 @@ def process(
     for handler in root_logger.handlers:
         if isinstance(handler, RichHandler):
             handler.console = console
-            handler.show_time = False
-            handler.show_path = False
             handler.setLevel(root_logger.level)
 
     processor = Processor()

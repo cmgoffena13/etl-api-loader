@@ -9,7 +9,7 @@ class ParserFactory:
     }
 
     @classmethod
-    def get_supported_parsers(cls) -> list[type[BaseParser]]:
+    def get_supported_parsers(cls) -> list[str]:
         return list(cls._parsers.keys())
 
     @classmethod

@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 from collections.abc import AsyncGenerator
 
 import structlog
+from sqlalchemy import Engine
 from sqlalchemy.orm import Session, sessionmaker
 
 from src.pipeline.read.authentication.factory import AuthenticationStrategyFactory
@@ -21,7 +22,8 @@ class BaseReader(ABC):
         Session: sessionmaker[Session],
         source_name: str,
         endpoint_name: str,
-        **kwargs,
+        *,
+        engine: Engine,
     ):
         self.source = source
         self.client = client
@@ -42,7 +44,7 @@ class BaseReader(ABC):
             Session=self.Session,
             source_name=self.source_name,
             endpoint_name=self.endpoint_name,
-            **kwargs,
+            engine=engine,
         )
 
     @staticmethod
@@ -66,4 +68,6 @@ class BaseReader(ABC):
     async def read(
         self, url: str, endpoint_config: APIEndpointConfig
     ) -> AsyncGenerator[list[dict], None]:
-        pass
+        if False:  # pragma: no cover
+            yield []
+        raise NotImplementedError

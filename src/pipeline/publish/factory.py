@@ -12,7 +12,7 @@ class PublisherFactory:
     }
 
     @classmethod
-    def get_supported_publishers(cls) -> list[type[BasePublisher]]:
+    def get_supported_publishers(cls) -> list[str]:
         return list(cls._publishers.keys())
 
     @classmethod

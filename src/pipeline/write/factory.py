@@ -11,7 +11,7 @@ class WriterFactory:
     }
 
     @classmethod
-    def get_supported_writers(cls) -> list[type[BaseWriter]]:
+    def get_supported_writers(cls) -> list[str]:
         return list(cls._writers.keys())
 
     @classmethod

@@ -56,7 +56,7 @@ class WebhookNotifier(BaseNotifier):
 
         text_message = "\n".join(formatted_message)
 
-        payload = {"text": text_message}
+        payload: Dict[str, Any] = {"text": text_message}
         payload["title"] = self.title
         payload["timestamp"] = timestamp
         payload["level"] = self.level.name

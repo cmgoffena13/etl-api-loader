@@ -28,6 +28,7 @@ async def test_rest_reader_no_pagination_single_request(
         Session=Session,
         source_name="test_api_no_pagination",
         endpoint_name="items",
+        engine=_engine,
     )
     reader.batch_size = 2
 
@@ -56,6 +57,7 @@ async def test_rest_reader_with_offset_pagination(
         Session=Session,
         source_name="test_api_offset_pagination",
         endpoint_name="items",
+        engine=_engine,
     )
     reader.batch_size = 10
 
@@ -95,6 +97,7 @@ async def test_rest_reader_with_next_url_pagination(
         Session=Session,
         source_name="test_api_next_url_pagination",
         endpoint_name="items",
+        engine=_engine,
     )
     reader.batch_size = 10
 
@@ -133,6 +136,7 @@ async def test_rest_reader_with_cursor_pagination(
         Session=Session,
         source_name="test_api_cursor_pagination",
         endpoint_name="items",
+        engine=_engine,
     )
     reader.batch_size = 10
 
@@ -252,6 +256,7 @@ async def test_rest_reader_with_offset_pagination_incremental(
         Session=Session,
         source_name=source_name,
         endpoint_name=endpoint_name,
+        engine=_engine,
     )
     reader.batch_size = 10
 
@@ -300,6 +305,7 @@ async def test_rest_reader_with_next_url_pagination_incremental(
         Session=Session,
         source_name=source_name,
         endpoint_name=endpoint_name,
+        engine=_engine,
     )
     reader.batch_size = 10
 
@@ -348,6 +354,7 @@ async def test_rest_reader_with_cursor_pagination_incremental(
         Session=Session,
         source_name=source_name,
         endpoint_name=endpoint_name,
+        engine=_engine,
     )
     reader.batch_size = 10
 

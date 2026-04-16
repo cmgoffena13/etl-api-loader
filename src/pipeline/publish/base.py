@@ -3,7 +3,7 @@ from typing import Type
 
 import pendulum
 import structlog
-from sqlalchemy import Engine, text
+from sqlalchemy import Engine, TextClause, text
 from sqlalchemy.orm import Session, sessionmaker
 from sqlmodel import SQLModel
 
@@ -55,7 +55,9 @@ class BasePublisher(ABC):
             }
 
     @abstractmethod
-    def create_publish_sql(self, data_model: Type[SQLModel], now_iso: str) -> str:
+    def create_publish_sql(
+        self, data_model: Type[SQLModel], now_iso: str
+    ) -> TextClause:
         variables = self.variable_cache[data_model.__name__]
 
         return text(f"""

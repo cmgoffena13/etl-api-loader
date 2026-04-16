@@ -10,4 +10,6 @@ class BaseParser(ABC):
 
     @abstractmethod
     async def parse(self, batch: list[dict]) -> AsyncGenerator[list[TableBatch], None]:
-        pass
+        if False:  # pragma: no cover
+            yield []
+        raise NotImplementedError

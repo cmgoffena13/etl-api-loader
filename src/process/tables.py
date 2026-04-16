@@ -47,7 +47,7 @@ def _get_model_columns(model: Type[SQLModel]) -> dict[str, dict]:
 @retry()
 def _create_production_table(
     model: Type[SQLModel], engine: Engine, metadata: MetaData
-) -> Table:
+) -> None:
     table_name = camel_to_snake(model.__name__)
     columns = []
     table_kwargs = {}
@@ -82,7 +82,7 @@ def create_production_tables(
 @retry()
 def _create_stage_table(
     model: Type[SQLModel], engine: Engine, metadata: MetaData
-) -> Table:
+) -> None:
     snake_name = camel_to_snake(model.__name__)
     table_name = f"stage_{snake_name}"
     columns = []
@@ -108,7 +108,7 @@ def create_stage_tables(
 
 
 @retry()
-def _db_drop_stage_table(stage_table_name: str, Session: sessionmaker[Session]):
+def _db_drop_stage_table(stage_table_name: str, Session: sessionmaker[Session]) -> None:
     with Session() as session:
         try:
             drop_sql = text(f"DROP TABLE IF EXISTS {stage_table_name}")

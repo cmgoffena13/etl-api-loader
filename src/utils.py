@@ -3,6 +3,7 @@ import os
 import re
 import time
 from functools import wraps
+from typing import Optional
 
 import boto3
 from azure.identity import DefaultAzureCredential
@@ -39,7 +40,7 @@ def retry(attempts: int = 3, delay: float = 0.25, backoff: float = 2.0):
     return decorator
 
 
-def aws_secret_helper(value: str) -> str:
+def aws_secret_helper(value: str) -> Optional[str]:
     client = boto3.client("secretsmanager")
     try:
         response = client.get_secret_value(SecretId=value)
@@ -63,7 +64,7 @@ def aws_secret_helper(value: str) -> str:
         raise
 
 
-def gcp_secret_helper(value: str) -> str:
+def gcp_secret_helper(value: str) -> Optional[str]:
     client = secretmanager.SecretManagerServiceClient()
     try:
         project_id = os.environ.get("GOOGLE_CLOUD_PROJECT")
@@ -80,7 +81,7 @@ def gcp_secret_helper(value: str) -> str:
         raise
 
 
-def azure_secret_helper(value: str) -> str:
+def azure_secret_helper(value: str) -> Optional[str]:
     vault_url = os.environ.get("AZURE_KEY_VAULT_URL")
     if not vault_url:
         raise ValueError("AZURE_KEY_VAULT_URL environment variable must be set")
