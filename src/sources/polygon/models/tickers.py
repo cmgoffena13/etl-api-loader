@@ -5,6 +5,8 @@ from sqlmodel import Field, PrimaryKeyConstraint, SQLModel
 
 
 class PolygonTickers(SQLModel, table=True):
+    __table_args__ = (PrimaryKeyConstraint("ticker", "market"),)
+
     active: bool = Field(alias="root.active")
     cik: Optional[str] = Field(alias="root.cik", default=None)
     composite_figi: Optional[str] = Field(alias="root.composite_figi", default=None)
@@ -19,5 +21,3 @@ class PolygonTickers(SQLModel, table=True):
     share_class_figi: Optional[str] = Field(alias="root.share_class_figi", default=None)
     ticker: str = Field(alias="root.ticker")
     type: Optional[str] = Field(alias="root.type", default=None)
-
-    __table_args__ = (PrimaryKeyConstraint("ticker", "market"),)
